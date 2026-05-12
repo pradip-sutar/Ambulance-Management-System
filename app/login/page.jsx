@@ -1,149 +1,154 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Eye, EyeOff } from "lucide-react"
+
+// ✅ IMPORT API
+// Make sure this path matches your actual project structure
+import { userLogin, adminLogin, driverLogin } from "../../components/api/auth"
 
 export default function LoginPage() {
-  const router = useRouter();
+  const router = useRouter()
 
   const [form, setForm] = useState({
     phone: "",
     password: "",
-  });
+  })
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setError("");
-  };
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    })
+    setError("")
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+    e.preventDefault()
+    setLoading(true)
+    setError("")
 
     try {
-      // Try User Login first
-      let res = await fetch("http://127.0.0.1:8000/auth/user-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: form.phone,
-          password: form.password,
-        }),
-      });
+      let data
 
-      let data = await res.json();
-
-      // If User login fails, try Admin Login with phone
-      if (!res.ok) {
-        res = await fetch("http://127.0.0.1:8000/auth/admin-login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone: form.phone,           // Using phone for admin
-            password: form.password,
-          }),
-        });
-        data = await res.json();
+      // try user login
+      try {
+        data = await userLogin(form.phone, form.password)
+      } catch {
+        // try admin login
+        try {
+          data = await adminLogin(form.phone, form.password)
+        } catch {
+          // try driver login
+          data = await driverLogin(form.phone, form.password)
+        }
       }
 
-      // If still fails, try Driver Login (using phone as username)
-      if (!res.ok) {
-        res = await fetch("http://127.0.0.1:8000/auth/driver-login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username: form.phone,        // Driver uses username = phone
-            password: form.password,
-          }),
-        });
-        data = await res.json();
-      }
+      if (data?.access_token) {
+        localStorage.setItem("token", data.access_token)
+        localStorage.setItem("user_phone", form.phone)
 
-      if (res.ok && data?.token) {
-        localStorage.setItem("token", data.token);
+        // Decode JWT payload to get role
+        const payload = JSON.parse(
+          atob(data.access_token.split(".")[1])
+        )
 
-        // Decode JWT to get role
-        const payload = JSON.parse(atob(data.token.split(".")[1]));
+        alert(`Login Successful as ${payload.role}`)
 
-        alert(`Login Successful as ${payload.role.toUpperCase()}`);
-
-        // Redirect based on role
-        switch (payload.role) {
-          case "admin":
-            router.push("/admin/dashboard");
-            break;
-          case "driver":
-            router.push("/driver/dashboard");
-            break;
-          default:
-            router.push("/"); // Normal User
+        if (payload.role === "admin") {
+          router.push("/admin")
+        } else if (payload.role === "driver") {
+          router.push("/driver")
+        } else {
+          router.push("/")
         }
       } else {
-        setError(data?.detail || "Invalid phone number or password");
+        setError("Invalid phone or password")
       }
     } catch (err) {
-      setError("Connection error. Please try again.");
+      console.error(err)
+      setError(err?.detail || "Server connection error")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-        <h2 className="text-3xl font-bold text-center mb-2">Login</h2>
-        <p className="text-gray-500 text-center mb-8">
-          Enter your phone number and password
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+
+      <form
+        onSubmit={handleSubmit}
+        className="
+          bg-white 
+          p-6 sm:p-8 
+          rounded-xl 
+          shadow-lg 
+          w-full 
+          max-w-md 
+        "
+      >
+        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6">
+          Login
+        </h1>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
+          <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm sm:text-base">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <input
-              name="phone"
-              type="tel"
-              placeholder="Phone Number"
-              value={form.phone}
-              onChange={handleChange}
-              required
-              className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-lg"
-            />
-          </div>
+        <input
+          type="text"
+          name="phone"
+          placeholder="Phone Number"
+          value={form.phone}
+          onChange={handleChange}
+          className="w-full border border-gray-300 p-3 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        />
 
-          <div>
-            <input
-              name="password"
-              type="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-lg"
-            />
-          </div>
+        <div className="relative mb-6">
+          <input
+            type={showPassword ? "text" : "password"}
+            name="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={handleChange}
+            className="w-full border border-gray-300 p-3 rounded pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
 
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl text-lg transition disabled:opacity-70"
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
           >
-            {loading ? "Logging in..." : "Login"}
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </button>
-        </form>
+        </div>
 
-        <p className="text-center text-sm text-gray-500 mt-8">
-          Admin, Driver, and User can login here
-        </p>
-      </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white p-3 rounded hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
+        >
+          {loading ? "Logging in..." : "Login"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push("/register")}
+          className="w-full mt-4 border border-blue-600 text-blue-600 p-3 rounded hover:bg-blue-50 transition-colors"
+        >
+          Create New Account
+        </button>
+
+      </form>
     </div>
-  );
+  )
 }

@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String
 from database import Base
 from sqlalchemy.orm import relationship
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -13,3 +14,4 @@ class User(Base):
     role = Column(String, default="user")   # This was missing in DB
 
     bookings = relationship("Booking", back_populates="user")
+   

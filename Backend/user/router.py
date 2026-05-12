@@ -29,3 +29,5 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
 @router.get("/")
 def all_users(db: Session = Depends(get_db)):
     return get_all_users(db)
+
+

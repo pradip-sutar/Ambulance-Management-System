@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { Eye, EyeOff } from "lucide-react"
 import {
   Card, CardContent, CardHeader, CardTitle
 } from "@/components/ui/card"
@@ -27,13 +29,15 @@ export default function AdminDashboard() {
   const [drivers, setDrivers] = useState([])
   const [selectedDriver, setSelectedDriver] = useState({})
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
-  const [driverForm, setDriverForm] = useState({
-    name: "",
-    phone: "",
-    vehicle_number: "",
-  })
-
+  const [showPassword, setShowPassword] = useState(false)
+ const [driverForm, setDriverForm] = useState({
+  name: "",
+  phone: "",
+  vehicle_number: "",
+  password: "",
+})
   useEffect(() => {
     fetchData()
   }, [])
@@ -53,7 +57,42 @@ export default function AdminDashboard() {
       setLoading(false)
     }
   }
+const handleUpdatePassword = async (
+  driverId,
+  newPassword
+) => {
+  try {
 
+    const token = localStorage.getItem("token")
+
+    const res = await fetch(
+      `http://localhost:8000/admin/driver-password/${driverId}`,
+      {
+        method: "PUT",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          password: newPassword,
+        }),
+      }
+    )
+
+    if (!res.ok) {
+      throw new Error()
+    }
+
+    toast.success("Password updated!")
+
+  } catch {
+
+    toast.error("Failed to update password")
+
+  }
+}
   // ✅ Assign driver
   const handleAssign = async (bookingId) => {
     const driverId = Number(selectedDriver[bookingId])
@@ -74,21 +113,27 @@ export default function AdminDashboard() {
 
   // ✅ Create driver
   const handleCreateDriver = async () => {
-    if (!driverForm.name || !driverForm.phone || !driverForm.vehicle_number) {
-      toast.error("All fields required")
-      return
-    }
+    if (
+  !driverForm.name ||
+  !driverForm.phone ||
+  !driverForm.vehicle_number ||
+  !driverForm.password
+) {
+  toast.error("All fields required")
+  return
+}
 
     try {
       await createDriver(driverForm)
 
       toast.success("Driver created!")
 
-      setDriverForm({
-        name: "",
-        phone: "",
-        vehicle_number: "",
-      })
+    setDriverForm({
+  name: "",
+  phone: "",
+  vehicle_number: "",
+  password: "",
+})
 
       fetchData()
     } catch {
@@ -102,10 +147,23 @@ export default function AdminDashboard() {
     <div className="p-6 space-y-6">
 
       {/* 🔷 HEADER */}
-      <h1 className="text-2xl font-bold flex items-center gap-2">
+      {/* <h1 className="text-2xl font-bold flex items-center gap-2">
         <Users className="h-6 w-6" />
         Admin Dashboard
-      </h1>
+      </h1> */}
+
+      <div className="flex justify-between items-center">
+  <h1 className="text-2xl font-bold flex items-center gap-2">
+    <Users className="h-6 w-6" />
+    Admin Dashboard
+  </h1>
+
+  <Button
+    onClick={() => router.push("/admin/report")}
+  >
+    View Reports
+  </Button>
+</div>
 
       {/* 🔷 STATS */}
       <div className="grid grid-cols-3 gap-4">
@@ -139,41 +197,155 @@ export default function AdminDashboard() {
           <CardTitle>Create Driver</CardTitle>
         </CardHeader>
 
-        <CardContent className="grid grid-cols-4 gap-3">
+        <CardContent className="grid grid-cols-5 gap-3">
 
-          <Input
-            placeholder="Name"
-            value={driverForm.name}
-            onChange={(e) =>
-              setDriverForm({ ...driverForm, name: e.target.value })
-            }
-          />
+  <Input
+    placeholder="Name"
+    value={driverForm.name}
+    onChange={(e) =>
+      setDriverForm({ ...driverForm, name: e.target.value })
+    }
+  />
 
-          <Input
-            placeholder="Phone"
-            value={driverForm.phone}
-            onChange={(e) =>
-              setDriverForm({ ...driverForm, phone: e.target.value })
-            }
-          />
+  <Input
+    placeholder="Phone"
+    value={driverForm.phone}
+    onChange={(e) =>
+      setDriverForm({ ...driverForm, phone: e.target.value })
+    }
+  />
 
-          <Input
-            placeholder="Vehicle Number"
-            value={driverForm.vehicle_number}
-            onChange={(e) =>
-              setDriverForm({
-                ...driverForm,
-                vehicle_number: e.target.value,
-              })
-            }
-          />
+  <Input
+    placeholder="Vehicle Number"
+    value={driverForm.vehicle_number}
+    onChange={(e) =>
+      setDriverForm({
+        ...driverForm,
+        vehicle_number: e.target.value,
+      })
+    }
+  />
 
-          <Button onClick={handleCreateDriver}>
-            Add Driver
-          </Button>
+  <div className="relative">
+  <Input
+    type={showPassword ? "text" : "password"}
+    placeholder="Password"
+    value={driverForm.password}
+    onChange={(e) =>
+      setDriverForm({
+        ...driverForm,
+        password: e.target.value,
+      })
+    }
+    className="pr-10"
+  />
 
-        </CardContent>
+  <button
+    type="button"
+    onClick={() => setShowPassword((prev) => !prev)}
+    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
+  >
+    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+  </button>
+</div>
+
+  <Button onClick={handleCreateDriver}>
+    Add Driver
+  </Button>
+
+</CardContent>
       </Card>
+
+
+      {/* 🔷 DRIVER LIST TABLE */}
+<Card>
+  <CardHeader>
+    <CardTitle>Drivers List</CardTitle>
+  </CardHeader>
+
+  <CardContent>
+    <div className="overflow-x-auto">
+      <table className="w-full border border-collapse rounded-lg">
+        
+        <thead>
+  <tr className="bg-gray-100">
+
+    <th className="border p-3 text-left">
+      Driver Name
+    </th>
+
+    <th className="border p-3 text-left">
+      Vehicle Number
+    </th>
+
+    <th className="border p-3 text-left">
+      Phone
+    </th>
+
+   
+
+    <th className="border p-3 text-left">
+      Status
+    </th>
+
+    <th className="border p-3 text-left">
+      Actions
+    </th>
+
+  </tr>
+</thead>
+
+        <tbody>
+  {drivers.map((driver) => (
+    <tr key={driver.id}>
+
+      <td className="border p-3">
+        {driver.name}
+      </td>
+
+      <td className="border p-3">
+        {driver.vehicle_number}
+      </td>
+
+      <td className="border p-3">
+        {driver.phone}
+      </td>
+
+      
+
+      <td className="border p-3">
+        <Badge>
+          {driver.status}
+        </Badge>
+      </td>
+
+      <td className="border p-3">
+        <Button
+          size="sm"
+          onClick={() => {
+            const newPassword = prompt(
+              "Enter new password"
+            )
+
+            if (!newPassword) return
+
+            handleUpdatePassword(
+              driver.id,
+              newPassword
+            )
+          }}
+        >
+          Edit Password
+        </Button>
+      </td>
+
+    </tr>
+  ))}
+</tbody>
+      </table>
+    </div>
+  </CardContent>
+</Card>
 
       {/* 🔷 BOOKINGS */}
       <div className="space-y-4">

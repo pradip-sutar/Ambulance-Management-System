@@ -1,82 +1,200 @@
-const BASE_URL = "http://127.0.0.1:8000"
+import axios from "axios"
 
-// ✅ GET bookings (available + assigned)
-export const getDriverBookings = async (driverId = 1) => {
-  const res = await fetch(`${BASE_URL}/drivers/${driverId}/bookings`)
+// ===============================
+// ✅ AXIOS INSTANCE (BASE SETUP)
+// ===============================
+const API = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+})
 
-  if (!res.ok) throw new Error("Failed to fetch bookings")
-
-  return res.json()
-}
-
-// ✅ ACCEPT booking (NEW)
-export const acceptBooking = async (bookingId, driverId = 1) => {
-  const res = await fetch(
-    `${BASE_URL}/drivers/accept?driver_id=${driverId}&booking_id=${bookingId}`,
-    {
-      method: "PUT",
+// ===============================
+// ✅ AUTO ATTACH TOKEN
+// ===============================
+API.interceptors.request.use(
+  (config) => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token")
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
     }
-  )
+    return config
+  },
+  (error) => Promise.reject(error)
+)
 
-  if (!res.ok) throw new Error("Already taken")
 
-  return res.json()
+// ===============================
+// 🚑 DRIVER BOOKINGS
+// ===============================
+
+// Get driver bookings (available + assigned)
+export const getDriverBookings = async () => {
+  try {
+    const res = await API.get("/drivers/me/bookings")
+    return res.data
+  } catch (error) {
+    throw error.response?.data || { message: "Failed to fetch bookings" }
+  }
 }
 
-// ❌ (optional reject)
+
+// ===============================
+// 🚨 BOOKING ACTIONS
+// ===============================
+
+// Accept booking
+export const acceptBooking = async (bookingId) => {
+  try {
+    const res = await API.put(
+      "/drivers/accept",
+      null,
+      {
+        params: { booking_id: bookingId },
+      }
+    )
+    return res.data
+  } catch (error) {
+    throw error.response?.data || { message: "Accept failed" }
+  }
+}
+
+// Reject booking
 export const rejectBooking = async (bookingId) => {
-  const res = await fetch(
-    `${BASE_URL}/drivers/reject?booking_id=${bookingId}`,
-    {
-      method: "PUT",
-    }
-  )
-
-  if (!res.ok) throw new Error("Reject failed")
-
-  return res.json()
+  try {
+    const res = await API.put(
+      "/drivers/reject",
+      null,
+      {
+        params: { booking_id: bookingId },
+      }
+    )
+    return res.data
+  } catch (error) {
+    throw error.response?.data || { message: "Reject failed" }
+  }
 }
 
-// ✅ UPDATE status (ride flow)
+// Update booking status (pickup, on-the-way, completed, etc.)
 export const updateBookingStatus = async (bookingId, status) => {
+  try {
+    const res = await API.put(
+      `/drivers/booking/${bookingId}`,
+      null,
+      {
+        params: { status },
+      }
+    )
+    return res.data
+  } catch (error) {
+    throw error.response?.data || { message: "Update failed" }
+  }
+}
+
+
+// ===============================
+// 👨‍✈️ DRIVER MANAGEMENT
+// ===============================
+
+// Create driver
+export const createDriver = async (data) => {
+  try {
+    const res = await API.post("/drivers/", data)
+    return res.data
+  } catch (error) {
+    throw error.response?.data || { message: "Failed to create driver" }
+  }
+}
+
+// Get all drivers
+export const getDrivers = async () => {
+  try {
+    const res = await API.get("/drivers")
+    return res.data
+  } catch (error) {
+    throw error.response?.data || { message: "Failed to fetch drivers" }
+  }
+}
+
+
+
+export const updateDriverPassword = async (
+  driverId,
+  password
+) => {
+
+  const token = localStorage.getItem("token")
+
   const res = await fetch(
-    `${BASE_URL}/drivers/booking/${bookingId}?status=${status}`,
+    `http://localhost:8000/admin/driver-password/${driverId}`,
     {
       method: "PUT",
+
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+
+      body: JSON.stringify({
+        password,
+      }),
     }
   )
 
-  if (!res.ok) throw new Error("Failed to update status")
-
-  return res.json()
-}
-
-
-
-// ✅ Create Driver
-export const createDriver = async (data) => {
-  const res = await fetch(`${BASE_URL}/drivers`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  })
-
   if (!res.ok) {
-    throw new Error("Failed to create driver")
+    throw new Error("Failed")
   }
 
-  return res.json()
+  return await res.json()
 }
 
-// ✅ Get all drivers
-export const getDrivers = async () => {
-  const res = await fetch(`${BASE_URL}/drivers`)
+// ===============================
+// 📤 FILE UPLOADS
+// ===============================
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch drivers")
+// Upload pickup proof
+export const uploadPickupProof = async (bookingId, file) => {
+  try {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    const res = await API.post(
+      `/drivers/bookings/${bookingId}/pickup-proof`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    )
+
+    return res.data
+  } catch (error) {
+    throw error.response?.data || { message: "Upload failed" }
   }
+}
 
-  return res.json()
+// Upload drop proof
+export const uploadDropProof = async (bookingId, file) => {
+  try {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    const res = await API.post(
+      `/drivers/bookings/${bookingId}/drop-proof`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    )
+
+    return res.data
+  } catch (error) {
+    throw error.response?.data || { message: "Upload failed" }
+  }
 }

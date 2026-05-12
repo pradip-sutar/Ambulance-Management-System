@@ -7,8 +7,8 @@ from auth.utils import hash_password
 def create_first_admin():
     db = SessionLocal()
 
-    phone = "9876543210"
-    password_plain = "admin123"
+    phone = "9776696669"
+    password_plain = "nagen@96"
 
     try:
         existing = db.query(Admin).filter(Admin.phone == phone).first()

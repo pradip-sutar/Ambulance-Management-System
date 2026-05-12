@@ -2,13 +2,12 @@
 
 from pydantic import BaseModel
 
+
 class DriverCreate(BaseModel):
     name: str
     phone: str
     vehicle_number: str
-    username: str     # ✅ NEW
-    password: str     # ✅ NEW
-
+    password: str
 
 class DriverResponse(DriverCreate):
     id: int

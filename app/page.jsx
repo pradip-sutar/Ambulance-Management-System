@@ -23,7 +23,7 @@ export default function Home() {
       <main className="container mx-auto flex-1 px-4 py-10">
         <div className="grid gap-8 lg:grid-cols-2">
           <BookingForm onSubmit={handleNewBooking} />
-          <RecentBookings bookings={bookings} />
+          {/* <RecentBookings bookings={bookings} /> */}
         </div>
       </main>
 
