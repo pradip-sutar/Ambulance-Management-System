@@ -24,11 +24,11 @@ export default function Home() {
         Changed max-w-5xl to max-w-7xl to stretch across laptop screens.
         Added responsive padding (lg:px-8 lg:py-20) for more breathing room on desktop.
       */}
-      <main className="container mx-auto flex-1 px-4 py-10 lg:px-8 lg:py-20">
-        <div className="mx-auto w-full max-w-6xl">
-          <BookingForm onSubmit={handleNewBooking} />
-        </div>
-      </main>
+      <main className="container mx-auto flex-1 bg-blue-100 px-4 py-10 lg:px-8 lg:py-20">
+  <div className="mx-auto w-full max-w-6xl">
+    <BookingForm onSubmit={handleNewBooking} />
+  </div>
+</main>
 
       <Footer />
       <Toaster 

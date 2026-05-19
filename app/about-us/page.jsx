@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Heart, Shield, Clock, Truck, Phone, Users, Star, ArrowRight } from "lucide-react"
+import { Header } from "@/components/header"
+import { Heart, Shield, Clock, Truck, Phone, Users, Star, ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Footer } from "@/components/footer"
@@ -29,25 +30,73 @@ const slides = [
 ]
 
 export default function AboutPage() {
+  // ✅ LIGHTBOX STATE
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  // ✅ OPEN LIGHTBOX
+  const openLightbox = (index) => {
+    setCurrentIndex(index)
+    setLightboxOpen(true)
+  }
+
+  // ✅ CLOSE LIGHTBOX
+  const closeLightbox = () => {
+    setLightboxOpen(false)
+  }
+
+  // ✅ NAVIGATE PHOTOS
+  const goNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % slides.length)
+  }
+
+  const goPrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length)
+  }
+
+  // ✅ KEYBOARD NAVIGATION
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!lightboxOpen) return
+      if (e.key === "Escape") closeLightbox()
+      if (e.key === "ArrowRight") goNext()
+      if (e.key === "ArrowLeft") goPrev()
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [lightboxOpen])
+
+  // ✅ LOCK BODY SCROLL WHEN LIGHTBOX OPEN
+  useEffect(() => {
+    if (lightboxOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [lightboxOpen])
+
   // ✅ SLIDER SETTINGS
   const settings = {
     dots: true,
     infinite: true,
     speed: 500,
-    slidesToShow: 5,      // Shows 3 images on desktop
-    slidesToScroll: 1,    // Slides 1 image at a time
+    slidesToShow: 5,
+    slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 3000,
     responsive: [
       {
-        breakpoint: 1024, // Tablet
+        breakpoint: 1024,
         settings: {
           slidesToShow: 2,
           slidesToScroll: 1,
         }
       },
       {
-        breakpoint: 640, // Mobile
+        breakpoint: 640,
         settings: {
           slidesToShow: 1,
           slidesToScroll: 1,
@@ -58,12 +107,11 @@ export default function AboutPage() {
 
   return (
     <div className="flex flex-col">
-      
+      <Header />
       {/* ========================================= */}
       {/* HERO SECTION                              */}
       {/* ========================================= */}
       <section className="relative w-full overflow-hidden min-h-[60vh] sm:min-h-[70vh] flex items-center py-12 sm:py-16 md:py-20">
-        {/* Background */}
         <div
           className="absolute inset-0 bg-cover bg-center z-0"
           style={{ backgroundImage: "url('/hero-ambulance2.png')" }}
@@ -138,6 +186,7 @@ export default function AboutPage() {
                   </p>
                   <div className="pt-3 sm:pt-4 border-t border-green-200">
                     <p className="text-xs sm:text-sm font-semibold text-green-700">Founder & Son</p>
+                    <p className="text-base sm:text-lg font-bold text-gray-800">Narendra Kumar Nath</p>
                     <p className="text-base sm:text-lg font-bold text-gray-800">Nagendra Nath</p>
                   </div>
                 </div>
@@ -160,21 +209,30 @@ export default function AboutPage() {
               Glimpse of Our Service
             </h2>
             <p className="mt-2 sm:mt-4 text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
-              Moments captured from our continuous efforts to save lives and serve the community.
+              Moments captured from our continuous efforts to save lives and serve the community. Click any photo to view full size.
             </p>
           </div>
 
-          {/* ✅ MULTIPLE ITEMS SLIDER */}
-         <div className="max-w-7xl mx-auto">
+          {/* ✅ MULTIPLE ITEMS SLIDER WITH CLICK-TO-OPEN */}
+          <div className="max-w-7xl mx-auto">
             <Slider {...settings}>
               {slides.map((src, index) => (
-                <div key={index} className="px-2"> {/* px-2 adds gap between slides */}
-                  <div className="relative w-full h-[150px] sm:h-[150px] md:h-[200px] lg:h-[300px] bg-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg">
+                <div key={index} className="px-2">
+                  <div
+                    className="relative w-full h-[150px] sm:h-[150px] md:h-[200px] lg:h-[300px] bg-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg cursor-pointer group"
+                    onClick={() => openLightbox(index)}
+                  >
                     <img
                       src={src}
                       alt={`Service Photo ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
+                    {/* ✅ HOVER OVERLAY */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center">
+                      <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm font-medium bg-black/50 px-3 py-1.5 rounded-full">
+                        🔍 View Full
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -183,6 +241,66 @@ export default function AboutPage() {
 
         </div>
       </section>
+
+      {/* ========================================= */}
+      {/* LIGHTBOX MODAL                            */}
+      {/* ========================================= */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={closeLightbox}
+        >
+          {/* Close Button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 z-10 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors duration-200"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5 sm:h-7 sm:w-7" />
+          </button>
+
+          {/* Previous Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              goPrev()
+            }}
+            className="absolute left-2 sm:left-6 z-10 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors duration-200"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8" />
+          </button>
+
+          {/* Next Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              goNext()
+            }}
+            className="absolute right-2 sm:right-6 z-10 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/25 text-white transition-colors duration-200"
+            aria-label="Next"
+          >
+            <ChevronRight className="h-6 w-6 sm:h-8 sm:w-8" />
+          </button>
+
+          {/* Image Container */}
+          <div
+            className="relative max-w-[95vw] max-h-[90vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={slides[currentIndex]}
+              alt={`Service Photo ${currentIndex + 1}`}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+            />
+          </div>
+
+          {/* Photo Counter */}
+          <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs sm:text-sm px-4 py-1.5 rounded-full backdrop-blur-sm">
+            {currentIndex + 1} / {slides.length}
+          </div>
+        </div>
+      )}
 
       {/* ========================================= */}
       {/* CORE VALUES / FEATURES                    */}

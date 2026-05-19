@@ -79,8 +79,8 @@ export function Footer() {
               {/* ✅ UPDATED: About Us Link now points to /about */}
               <li><Link href="/about-us" className="text-sm hover:text-blue-400 transition-colors duration-200 flex items-center gap-2"><span className="text-blue-600">›</span> About Us</Link></li>
               
-              <li><Link href="/" className="text-sm hover:text-blue-400 transition-colors duration-200 flex items-center gap-2"><span className="text-blue-600">›</span> Our Services</Link></li>
-              <li><Link href="/" className="text-sm hover:text-blue-400 transition-colors duration-200 flex items-center gap-2"><span className="text-blue-600">›</span> Privacy Policy</Link></li>
+              <li><Link href="/our-services" className="text-sm hover:text-blue-400 transition-colors duration-200 flex items-center gap-2"><span className="text-blue-600">›</span> Our Services</Link></li>
+              <li><Link href="/privacy-policy" className="text-sm hover:text-blue-400 transition-colors duration-200 flex items-center gap-2"><span className="text-blue-600">›</span> Privacy Policy</Link></li>
             </ul>
           </div>
 
@@ -94,7 +94,7 @@ export function Footer() {
                 <Phone className="h-5 w-5 text-blue-400 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-white text-sm font-medium">Emergency 24/7</p>
-                  <p className="text-sm">9776696669, 9348616669</p>
+                  <p className="text-sm">9776696669, 9348616669,9006706355</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">

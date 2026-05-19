@@ -46,7 +46,7 @@ export function Hero() {
           {/* Description */}
           <p className="mb-8 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg md:text-xl">
             Fast, reliable emergency medical transport when every second counts.
-            Our network of verified ambulances is ready to respond 24/7.
+            Our ambulances is ready to respond 24/7.
           </p>
 
           {/* Stats Container */}

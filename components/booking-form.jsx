@@ -164,79 +164,90 @@ export function BookingForm({ onSubmit }) {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+  e.preventDefault()
+  setIsSubmitting(true)
 
-    const requiredFields = [
-      "bookerName",
-      "bookerPhone",
-      "patientName",
-      "patientDob",
-      "patientGender",
-      "patientContact",
-      "patientVillage",
-      "patientPS",
-      "patientDistrict",
-      "patientPincode",
-      "patientAadhar",
-      "medicalCondition",
-      "pickupAddress",
-      "ambulanceType",
-    ]
+  const requiredFields = [
+    "bookerName",
+    "bookerPhone",
+    "patientName",
+    "patientDob",
+    "patientGender",
+    "patientContact",
+    "patientVillage",
+    "patientPS",
+    "patientDistrict",
+    "patientPincode",
+    "patientAadhar",
+    "medicalCondition",
+    "pickupAddress",
+    "ambulanceType",
+  ]
 
-    const missing = requiredFields.filter((f) => !formData[f])
+  const missing = requiredFields.filter((f) => !formData[f])
 
-    if (missing.length > 0) {
-      toast.error("Please fill all required fields")
-      setIsSubmitting(false)
-      return
-    }
-
-    const payload = {
-      registration_number: formData.registrationNumber,
-      booker_name: formData.bookerName,
-      booker_phone: formData.bookerPhone,
-      patient_name: formData.patientName,
-      patient_age: Number(formData.patientAge),
-      patient_gender: formData.patientGender,
-      patient_contact: formData.patientContact,
-      patient_address: formData.patientAddress,
-      patient_village: formData.patientVillage,
-      patient_police_station: formData.patientPS,
-      patient_district: formData.patientDistrict,
-      patient_pincode: formData.patientPincode,
-      patient_aadhar: formData.patientAadhar,
-      medical_condition: formData.medicalCondition,
-      caretaker_name: formData.caretakerName,
-      caretaker_phone: formData.caretakerPhone,
-      caretaker_relation: formData.caretakerRelation,
-      caretaker_address: formData.caretakerAddress,
-      caretaker_aadhar: formData.caretakerAadharNumber,
-      pickup_address: formData.pickupAddress,
-      drop_address: formData.dropAddress,
-      ambulance_type: formData.ambulanceType,
-      booking_date: formData.bookingDate,
-      booking_time: formData.bookingTime,
-      pickup_location: pickupLocation
-        ? { lat: pickupLocation.lat, lng: pickupLocation.lng }
-        : null,
-    }
-
-    try {
-      const data = await createBooking(payload)
-      toast.success("Ambulance booked successfully!")
-
-      if (onSubmit) onSubmit(data)
-
-      const phone = localStorage.getItem("user_phone")
-      if (phone) loadBookings(phone)
-    } catch (error) {
-      toast.error(error.message || "Booking failed")
-    } finally {
-      setIsSubmitting(false)
-    }
+  if (missing.length > 0) {
+    toast.error("Please fill all required fields")
+    setIsSubmitting(false)
+    return
   }
 
+  // CREATE PAYLOAD FIRST
+  const payload = {
+    registration_number: formData.registrationNumber,
+    booker_name: formData.bookerName,
+    booker_phone: formData.bookerPhone,
+    patient_name: formData.patientName,
+    patient_age: Number(formData.patientAge),
+    patient_gender: formData.patientGender,
+    patient_contact: formData.patientContact,
+    patient_address: formData.patientAddress,
+    patient_village: formData.patientVillage,
+    patient_police_station: formData.patientPS,
+    patient_district: formData.patientDistrict,
+    patient_pincode: formData.patientPincode,
+    patient_aadhar: formData.patientAadhar,
+    medical_condition: formData.medicalCondition,
+    caretaker_name: formData.caretakerName,
+    caretaker_phone: formData.caretakerPhone,
+    caretaker_relation: formData.caretakerRelation,
+    caretaker_address: formData.caretakerAddress,
+    caretaker_aadhar: formData.caretakerAadharNumber,
+    pickup_address: formData.pickupAddress,
+    drop_address: formData.dropAddress,
+    ambulance_type: formData.ambulanceType,
+    booking_date: formData.bookingDate,
+    booking_time: formData.bookingTime,
+    pickup_location: pickupLocation
+      ? {
+          lat: pickupLocation.lat,
+          lng: pickupLocation.lng,
+        }
+      : null,
+  }
+
+  try {
+    const data = await createBooking(payload)
+
+    toast.success("Ambulance booked successfully!")
+
+    // Auto open call dialer
+    window.location.href = "tel:+919776696669"
+
+    if (onSubmit) onSubmit(data)
+
+    const phone = localStorage.getItem("user_phone")
+
+    if (phone) {
+      loadBookings(phone)
+    }
+
+  } catch (error) {
+    toast.error(error.message || "Booking failed")
+  } finally {
+    setIsSubmitting(false)
+  }
+}
   return (
     // ✅ INCREASED max-w-6xl to make form wider and shorter
     <div className="w-full max-w-6xl mx-auto p-4 md:p-6 space-y-5">
