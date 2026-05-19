@@ -20,6 +20,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { User, Heart, Users, MapPin, Ambulance } from "lucide-react"
@@ -28,11 +29,12 @@ import dynamic from "next/dynamic"
 /* ---------------- HELPERS ---------------- */
 const MapPicker = dynamic(() => import("@/components/ui/MapPicker"), {
   ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full bg-gray-100 text-muted-foreground">
+      Loading map...
+    </div>
+  ),
 })
-
-const generateRegNo = () => {
-  return "AMB-" + Date.now().toString().slice(-8)
-}
 
 const calculateAge = (dob) => {
   if (!dob) return ""
@@ -54,8 +56,10 @@ const calculateAge = (dob) => {
 const hospitals = [
   { name: "SCB Medical", address: "Cuttack" },
   { name: "Community Health Centre", address: "Mahanga" },
-  { name: "Community Health Centre", address: " Barchana" },
+  { name: "Community Health Centre", address: "Barchana" },
   { name: "Community Health Centre", address: "Jagannathpur" },
+  { name: "Community Health Centre", address: "Salepur" },
+  { name: "Satya Sai Hospital", address: "Salepur" },
 ]
 
 const ambulanceTypes = [
@@ -70,14 +74,12 @@ export function BookingForm({ onSubmit }) {
   const [pickupLocation, setPickupLocation] = useState(null)
   const [myBookings, setMyBookings] = useState([])
   const [isMapOpen, setIsMapOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   const [formData, setFormData] = useState({
-    // Booking Person
     bookerName: "",
     bookerPhone: "",
     bookerAddress: "",
-
-    // Patient Details
     patientName: "",
     patientDob: "",
     patientAge: "",
@@ -90,30 +92,32 @@ export function BookingForm({ onSubmit }) {
     patientDistrict: "",
     patientPincode: "",
     patientAadhar: "",
-
-    bookingDate: new Date().toISOString().split("T")[0],
-    bookingTime: new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-
+    bookingDate: "",
+    bookingTime: "",
     medicalCondition: "",
-
-    // Caretaker Details
     caretakerName: "",
     caretakerPhone: "",
     caretakerRelation: "",
     caretakerAddress: "",
     caretakerAadharNumber: "",
-
-    // Service Details
     pickupAddress: "",
     dropAddress: "",
     ambulanceType: "",
-
-    // Meta
     registrationNumber: "",
   })
+
+  useEffect(() => {
+    setMounted(true)
+    setFormData((prev) => ({
+      ...prev,
+      bookingDate: new Date().toISOString().split("T")[0],
+      bookingTime: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      registrationNumber: "AMB-" + Date.now().toString().slice(-8),
+    }))
+  }, [])
 
   useEffect(() => {
     const phone = localStorage.getItem("user_phone")
@@ -127,16 +131,9 @@ export function BookingForm({ onSubmit }) {
       const data = await getMyBookings(phone)
       setMyBookings(data)
     } catch (err) {
-      console.log(err)
+      console.error("Failed to load bookings:", err)
     }
   }
-
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      registrationNumber: "AMB-" + Date.now().toString().slice(-8),
-    }))
-  }, [])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -149,6 +146,10 @@ export function BookingForm({ onSubmit }) {
 
   const handleSelectChange = (value) => {
     setFormData((prev) => ({ ...prev, ambulanceType: value }))
+  }
+
+  const handleGenderChange = (value) => {
+    setFormData((prev) => ({ ...prev, patientGender: value }))
   }
 
   const handleHospitalSelect = (value) => {
@@ -224,6 +225,11 @@ export function BookingForm({ onSubmit }) {
     try {
       const data = await createBooking(payload)
       toast.success("Ambulance booked successfully!")
+
+      if (onSubmit) onSubmit(data)
+
+      const phone = localStorage.getItem("user_phone")
+      if (phone) loadBookings(phone)
     } catch (error) {
       toast.error(error.message || "Booking failed")
     } finally {
@@ -232,24 +238,26 @@ export function BookingForm({ onSubmit }) {
   }
 
   return (
-    // MAIN RESPONSIVE WRAPPER
-    <div className="w-full max-w-5xl mx-auto p-4 md:p-6 space-y-8">
+    // ✅ INCREASED max-w-6xl to make form wider and shorter
+    <div className="w-full max-w-6xl mx-auto p-4 md:p-6 space-y-5">
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
             <Ambulance className="h-6 w-6" />
             Book Ambulance
           </CardTitle>
         </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <CardContent className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
             {/* BOOKER */}
             <Section icon={<User />} title="Booking Person">
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+              {/* ✅ ADDED lg:grid-cols-3 to flatten the form height */}
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <Field label="Name *" name="bookerName" value={formData.bookerName} onChange={handleInputChange} />
                 <Field label="Phone *" name="bookerPhone" value={formData.bookerPhone} onChange={handleInputChange} />
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-2 lg:col-span-2">
                   <Field label="Address" name="bookerAddress" value={formData.bookerAddress} onChange={handleInputChange} />
                 </div>
               </div>
@@ -257,23 +265,22 @@ export function BookingForm({ onSubmit }) {
 
             {/* PATIENT */}
             <Section icon={<Heart />} title="Patient Details">
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+              {/* ✅ ADDED lg:grid-cols-3 to flatten the form height */}
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <Field label="Patient Name *" name="patientName" value={formData.patientName} onChange={handleInputChange} />
                 <Field label="DOB *" type="date" name="patientDob" value={formData.patientDob} onChange={handleInputChange} />
                 <Field label="Age" name="patientAge" value={formData.patientAge} disabled />
 
-                <div className="grid-cols-1"> {/* Ensure Select container takes full width */}
-                  <SelectField
-                    label="Gender *"
-                    value={formData.patientGender}
-                    onChange={(v) => setFormData((p) => ({ ...p, patientGender: v }))}
-                    options={[
-                      { value: "male", label: "Male" },
-                      { value: "female", label: "Female" },
-                      { value: "other", label: "Other" },
-                    ]}
-                  />
-                </div>
+                <SelectField
+                  label="Gender *"
+                  value={formData.patientGender}
+                  onChange={handleGenderChange}
+                  options={[
+                    { value: "male", label: "Male" },
+                    { value: "female", label: "Female" },
+                    { value: "other", label: "Other" },
+                  ]}
+                />
 
                 <Field label="Contact *" name="patientContact" value={formData.patientContact} onChange={handleInputChange} />
                 <Field label="Aadhaar Number *" name="patientAadhar" value={formData.patientAadhar} onChange={handleInputChange} />
@@ -281,30 +288,34 @@ export function BookingForm({ onSubmit }) {
                 <Field label="Police Station *" name="patientPS" value={formData.patientPS} onChange={handleInputChange} />
                 <Field label="District *" name="patientDistrict" value={formData.patientDistrict} onChange={handleInputChange} />
                 <Field label="Pincode *" name="patientPincode" value={formData.patientPincode} onChange={handleInputChange} />
-                <div className="sm:col-span-2">
+                
+                <div className="sm:col-span-2 lg:col-span-2">
                   <Field label="Patient Address" name="patientAddress" value={formData.patientAddress} onChange={handleInputChange} />
                 </div>
               </div>
-              <div className="mt-4">
+              
+              {/* ✅ REDUCED min-h to save vertical space */}
+              <div className="mt-3">
                 <Label>Medical Condition *</Label>
                 <Textarea
                   name="medicalCondition"
                   placeholder="Describe the medical condition or emergency..."
                   value={formData.medicalCondition}
                   onChange={handleInputChange}
-                  className="min-h-[100px]"
+                  className="min-h-[80px]"
                 />
               </div>
             </Section>
 
             {/* CARETAKER */}
             <Section icon={<Users />} title="Caretaker Details">
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+              {/* ✅ ADDED lg:grid-cols-3 to flatten the form height */}
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 <Field label="Name" name="caretakerName" value={formData.caretakerName} onChange={handleInputChange} />
                 <Field label="Phone" name="caretakerPhone" value={formData.caretakerPhone} onChange={handleInputChange} />
                 <Field label="Relation" name="caretakerRelation" value={formData.caretakerRelation} onChange={handleInputChange} />
                 <Field label="Aadhaar No" name="caretakerAadharNumber" value={formData.caretakerAadharNumber} onChange={handleInputChange} />
-                <div className="sm:col-span-2">
+                <div className="sm:col-span-2 lg:col-span-4">
                   <Field label="Address" name="caretakerAddress" value={formData.caretakerAddress} onChange={handleInputChange} />
                 </div>
               </div>
@@ -312,110 +323,110 @@ export function BookingForm({ onSubmit }) {
 
             {/* SERVICE */}
             <Section icon={<MapPin />} title="Service Details">
-              <div className="space-y-4">
-                {/* PICKUP ADDRESS WITH MAP ICON */}
-                <div className="space-y-2">
+              <div className="space-y-3">
+                <div className="space-y-1.5">
                   <Label>Pickup Address *</Label>
                   <div className="relative">
+                    {/* ✅ REDUCED rows to save vertical space */}
                     <Textarea
                       name="pickupAddress"
                       placeholder="Enter address manually or click the icon to use map"
                       value={formData.pickupAddress}
                       onChange={handleInputChange}
-                      rows={3}
+                      rows={2}
                       className="pr-10 w-full text-base"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-2 top-2 h-9 w-9 z-10 hover:bg-accent"
+                      className="absolute right-2 top-2 h-8 w-8 z-10 hover:bg-accent"
                       onClick={() => setIsMapOpen(true)}
                       title="Open Map Picker"
                     >
-                      <MapPin className="h-5 w-5 text-primary" />
+                      <MapPin className="h-4 w-4 text-primary" />
                     </Button>
                   </div>
                 </div>
 
-                {/* DROP HOSPITAL DROPDOWN */}
-                <div className="space-y-2">
-                  <Label>Drop Hospital</Label>
-                  <Select value={formData.dropAddress} onValueChange={handleHospitalSelect}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Hospital" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {hospitals.map((h) => (
-                        <SelectItem
-                          key={`${h.name}-${h.address}`}
-                          value={`${h.name}, ${h.address}`}
-                        >
-                          <div className="flex flex-col items-start">
-                            <span className="font-medium">{h.name}</span>
-                            <span className="text-xs text-muted-foreground">{h.address}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Drop Hospital</Label>
+                    <Select value={formData.dropAddress} onValueChange={handleHospitalSelect}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Hospital" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hospitals.map((h, i) => (
+                          <SelectItem
+                            key={`${h.name}-${h.address}-${i}`}
+                            value={`${h.name}, ${h.address}`}
+                          >
+                            <div className="flex flex-col items-start">
+                              <span className="font-medium">{h.name}</span>
+                              <span className="text-xs text-muted-foreground">{h.address}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* AMBULANCE TYPE */}
-                <div className="space-y-2">
-                  <Label>Ambulance Type *</Label>
-                  <Select value={formData.ambulanceType} onValueChange={handleSelectChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Ambulance Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ambulanceTypes.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-1.5">
+                    <Label>Ambulance Type *</Label>
+                    <Select value={formData.ambulanceType} onValueChange={handleSelectChange}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Ambulance Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ambulanceTypes.map((t) => (
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </Section>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Booking Date" name="bookingDate" value={formData.bookingDate} disabled />
-              <Field label="Booking Time" name="bookingTime" value={formData.bookingTime} disabled />
-            </div>
+            {mounted && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Booking Date" name="bookingDate" value={formData.bookingDate} disabled />
+                <Field label="Booking Time" name="bookingTime" value={formData.bookingTime} disabled />
+              </div>
+            )}
 
-            {/* SUBMIT */}
-            <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-lg mt-4">
+            <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-lg mt-2">
               {isSubmitting ? "Dispatching..." : "Request Ambulance"}
             </Button>
 
-            <p className="text-xs text-gray-500 text-center mt-2">
-              Reg No: {formData.registrationNumber}
-            </p>
+            {mounted && (
+              <p className="text-xs text-gray-500 text-center mt-1">
+                Reg No: {formData.registrationNumber}
+              </p>
+            )}
           </form>
         </CardContent>
       </Card>
 
       {/* USER BOOKINGS */}
-      <div className="space-y-4">
-        {/* <h2 className="text-xl font-semibold px-1">My Bookings</h2> */}
+      <div className="space-y-3">
         {myBookings.length === 0 && (
-          <p className="text-muted-foreground text-center py-4">No bookings found.</p>
+          <p className="text-muted-foreground text-center py-2"></p>
         )}
         {myBookings.map((booking) => (
           <Card key={booking.id} className="overflow-hidden">
-            <CardContent className="p-4 space-y-4">
-              {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-3">
+            <CardContent className="p-3 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b pb-2">
                 <p className="font-bold text-lg">{booking.registration_number}</p>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 w-fit sm:ml-auto">
                   {booking.status}
                 </span>
               </div>
 
-              {/* Details */}
-              <div className="space-y-2 text-sm">
+              <div className="space-y-1 text-sm">
                 <div className="flex flex-col sm:flex-row">
                   <span className="font-medium text-gray-500 w-full sm:w-32">Patient:</span>
                   <span className="break-words">{booking.patient_name}</span>
@@ -426,9 +437,8 @@ export function BookingForm({ onSubmit }) {
                 </div>
               </div>
 
-              {/* DRIVER DETAILS */}
               {booking.driver ? (
-                <div className="border rounded-md p-3 bg-green-50 space-y-2 text-sm">
+                <div className="border rounded-md p-2 bg-green-50 space-y-1 text-sm">
                   <h3 className="font-semibold text-green-700">Driver Assigned</h3>
                   <div className="flex flex-col sm:flex-row">
                     <span className="font-medium text-gray-600 w-full sm:w-24">Name:</span>
@@ -444,7 +454,7 @@ export function BookingForm({ onSubmit }) {
                   </div>
                 </div>
               ) : (
-                <div className="bg-yellow-50 text-yellow-800 p-3 rounded-md text-sm flex items-center justify-center gap-2">
+                <div className="bg-yellow-50 text-yellow-800 p-2 rounded-md text-sm flex items-center justify-center gap-2">
                   <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
                   Waiting for driver acceptance...
                 </div>
@@ -456,16 +466,15 @@ export function BookingForm({ onSubmit }) {
 
       {/* MAP DIALOG */}
       <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
-        {/* Responsive Dialog: Full screen height on mobile, auto on desktop */}
-        <DialogContent className="sm:max-w-4xl w-full h-[85vh] sm:h-auto flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="px-4 pt-4 pb-2 sm:px-6 sm:pt-6 border-b">
+        <DialogContent className="sm:max-w-4xl p-0 overflow-hidden">
+          <DialogHeader className="p-3 border-b">
             <DialogTitle>Select Pickup Location</DialogTitle>
+            <DialogDescription>
+              Click anywhere on the map to confirm the pickup location.
+            </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 w-full relative bg-gray-100">
+          <div className="w-full h-[400px]">
             <MapPicker onSelectLocation={handleMapSelect} />
-          </div>
-          <div className="p-4 bg-white border-t text-center text-sm text-muted-foreground">
-            Click anywhere on the map to confirm the pickup location.
           </div>
         </DialogContent>
       </Dialog>
@@ -473,35 +482,37 @@ export function BookingForm({ onSubmit }) {
   )
 }
 
-/* ---------------- HELPERS UI ---------------- */
+/* ---------------- HELPER UI COMPONENTS ---------------- */
 
 function Section({ icon, title, children }) {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 font-medium text-lg text-gray-800">
+    // ✅ REDUCED padding and spacing to make sections compact
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 font-medium text-base text-gray-800">
         {icon}
         {title}
       </div>
-      <div className="p-4 border rounded-lg bg-white shadow-sm">{children}</div>
+      <div className="p-3 border rounded-lg bg-white shadow-sm">{children}</div>
     </div>
   )
 }
 
 function Field({ label, ...props }) {
   return (
-    <div className="space-y-1.5">
-      <Label className="text-sm font-medium">{label}</Label>
-      <Input {...props} className="w-full" />
+    // ✅ REDUCED space between label and input
+    <div className="space-y-1">
+      <Label className="text-xs font-medium text-gray-600">{label}</Label>
+      <Input {...props} className="w-full h-9 text-sm" />
     </div>
   )
 }
 
 function SelectField({ label, value, onChange, options }) {
   return (
-    <div className="space-y-1.5">
-      <Label className="text-sm font-medium">{label}</Label>
+    <div className="space-y-1">
+      <Label className="text-xs font-medium text-gray-600">{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full h-9 text-sm">
           <SelectValue placeholder="Select" />
         </SelectTrigger>
         <SelectContent>

@@ -63,8 +63,8 @@ export function Hero() {
 
             <StatIndicator
               icon={<Truck className="h-4 w-4 sm:h-6 sm:w-6" />}
-              value="240+"
-              label="Active fleet"
+              value="24/7"
+              label="Emergency service"
             />
 
             <StatIndicator

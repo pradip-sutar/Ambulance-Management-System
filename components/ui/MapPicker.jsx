@@ -1,30 +1,24 @@
 "use client"
 
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
-// Fix marker icon issue
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png"
-import markerIcon from "leaflet/dist/images/marker-icon.png"
-import markerShadow from "leaflet/dist/images/marker-shadow.png"
-
+/* -------------------------------------------------------
+   FIX: Marker icon — use CDN URLs (most reliable approach)
+   This avoids all issues with Next.js image imports,
+   missing public folder files, and broken _getIconUrl.
+------------------------------------------------------- */
 delete L.Icon.Default.prototype._getIconUrl
 
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x.src,
-  iconUrl: markerIcon.src,
-  shadowUrl: markerShadow.src,
-})
-
-
-const customIcon = new L.Icon({
-  iconUrl: "/marker-icon.png",
-  iconRetinaUrl: "/marker-icon-2x.png",
-  shadowUrl: "/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 })
 
 const defaultCenter = { lat: 20.2961, lng: 85.8245 }
@@ -56,21 +50,34 @@ function LocationMarker({ marker, setMarker, onSelectLocation }) {
     },
   })
 
-  return marker ?<Marker position={marker} icon={customIcon} /> : null
+  // FIX: Use default icon (no customIcon needed since we fixed L.Icon.Default)
+  return marker ? <Marker position={marker} /> : null
 }
 
 export default function MapPicker({ onSelectLocation }) {
   const [marker, setMarker] = useState(null)
 
+  // Fallback: ensure leaflet CSS is loaded (helps with some Next.js setups)
+  useEffect(() => {
+    const id = "leaflet-css"
+    if (!document.getElementById(id)) {
+      const link = document.createElement("link")
+      link.id = id
+      link.rel = "stylesheet"
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      document.head.appendChild(link)
+    }
+  }, [])
+
   return (
     <MapContainer
-      key={marker?.lat || "default"}
       center={defaultCenter}
       zoom={14}
       style={{ height: "100%", width: "100%" }}
+      // FIX: Removed `key` prop — it was causing full remount on every click
     >
       <TileLayer
-        attribution="&copy; OpenStreetMap contributors"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 

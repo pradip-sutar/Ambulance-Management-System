@@ -8,21 +8,21 @@ const inter = Inter({ subsets: ["latin"] })
 
 
 export const metadata = {
-  title: 'RapidCare - Emergency Ambulance Booking',
+  title: 'Free Ambulace Booking',
   description: 'Book an ambulance in seconds. Fast, reliable 24/7 emergency medical transport service.',
   generator: 'v0.app',
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
+        url: '/ambulance_logo.png',
         media: '(prefers-color-scheme: light)',
       },
       {
-        url: '/icon-dark-32x32.png',
+        url: '/ambulance_logo.png',
         media: '(prefers-color-scheme: dark)',
       },
       {
-        url: '/icon.svg',
+        url: '/ambulance_logo.png',
         type: 'image/svg+xml',
       },
     ],

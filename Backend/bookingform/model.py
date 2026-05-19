@@ -1,10 +1,7 @@
-# bookingform/model.py
-
-from sqlalchemy import Column, Integer, String, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
 from sqlalchemy.sql import func
-from sqlalchemy import DateTime
 
 class Booking(Base):
     __tablename__ = "bookings"
@@ -52,12 +49,17 @@ class Booking(Base):
     # Status
     status = Column(String, default="pending")
 
+    # ✅ PROOF AND KM COLUMNS (BOOKING WISE)
+    pickup_proof_url = Column(String, nullable=True)
+    pickup_km = Column(Float, nullable=True)
+    pickup_time = Column(DateTime, nullable=True)
+
+    drop_proof_url = Column(String, nullable=True)
+    drop_km = Column(Float, nullable=True)
+    drop_time = Column(DateTime, nullable=True)
+
     # Relationships
     user = relationship("User", back_populates="bookings")
     driver = relationship("Driver", back_populates="bookings")
 
-    created_at = Column(
-    DateTime(timezone=True),
-    server_default=func.now()
-)
-    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

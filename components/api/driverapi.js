@@ -78,14 +78,14 @@ export const rejectBooking = async (bookingId) => {
   }
 }
 
-// Update booking status (pickup, on-the-way, completed, etc.)
-export const updateBookingStatus = async (bookingId, status) => {
+// ✅ FIXED: Send status and extra data (km, urls) as JSON body instead of Query Params
+export const updateBookingStatus = async (bookingId, status, extra = {}) => {
   try {
     const res = await API.put(
       `/drivers/booking/${bookingId}`,
-      null,
-      {
-        params: { status },
+      { 
+        status, 
+        ...extra // Spreads pickup_km, pickup_proof_url, drop_km, drop_proof_url
       }
     )
     return res.data
@@ -119,25 +119,17 @@ export const getDrivers = async () => {
   }
 }
 
-
-
-export const updateDriverPassword = async (
-  driverId,
-  password
-) => {
-
+export const updateDriverPassword = async (driverId, password) => {
   const token = localStorage.getItem("token")
 
   const res = await fetch(
     `http://localhost:8000/admin/driver-password/${driverId}`,
     {
       method: "PUT",
-
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-
       body: JSON.stringify({
         password,
       }),
@@ -171,7 +163,7 @@ export const uploadPickupProof = async (bookingId, file) => {
       }
     )
 
-    return res.data
+    return res.data // Backend returns { "url": "uploads/..." }
   } catch (error) {
     throw error.response?.data || { message: "Upload failed" }
   }
@@ -193,7 +185,7 @@ export const uploadDropProof = async (bookingId, file) => {
       }
     )
 
-    return res.data
+    return res.data // Backend returns { "url": "uploads/..." }
   } catch (error) {
     throw error.response?.data || { message: "Upload failed" }
   }
