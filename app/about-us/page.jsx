@@ -22,7 +22,10 @@ const slides = [
   "/slider-6.jpeg",
   "/slider-8.jpeg",
   "/slider-9.jpeg",
-  "/slider-5.jpeg",
+  "/slider-10.jpeg",
+  "/slider-11.jpeg",
+  "/slider-12.jpeg",
+  "/slider-13.jpeg",
 ]
 
 export default function AboutPage() {
@@ -162,11 +165,11 @@ export default function AboutPage() {
           </div>
 
           {/* ✅ MULTIPLE ITEMS SLIDER */}
-          <div className="max-w-5xl mx-auto">
+         <div className="max-w-7xl mx-auto">
             <Slider {...settings}>
               {slides.map((src, index) => (
                 <div key={index} className="px-2"> {/* px-2 adds gap between slides */}
-                  <div className="relative w-full aspect-video bg-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg">
+                  <div className="relative w-full h-[150px] sm:h-[150px] md:h-[200px] lg:h-[300px] bg-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg">
                     <img
                       src={src}
                       alt={`Service Photo ${index + 1}`}
