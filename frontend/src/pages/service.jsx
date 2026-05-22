@@ -213,7 +213,7 @@ export default function ServicesPage() {
                                     <LocationCard name="Mulabasanta Gram Panchyat" />
                                     <LocationCard name="Kusupur Gram Panchyat" />
                                     <LocationCard name="Kuhunda Gram Panchyat" />
-                                    <LocationCard name="Basudevpur Gram Panchyat" />
+                                    <LocationCard name="Balichandrapur Gram Panchyat" />
                                 </div>
                             </div>
 
