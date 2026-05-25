@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { 
-  Eye, EyeOff, Users, Ambulance, MapPin, 
-  ClipboardList, UserCheck, Truck, Plus, FileText 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog"
+import {
+  Eye, EyeOff, Users, Ambulance, MapPin,
+  ClipboardList, UserCheck, Truck, Plus, FileText,
+  Heart, User as UserIcon,
 } from "lucide-react"
 import {
   Card, CardContent, CardHeader, CardTitle
@@ -14,6 +21,8 @@ import {
 } from "./ui/select"
 import { Badge } from "./ui/badge"
 import { Input } from "./ui/input"
+import { Label } from "./ui/label"
+import { Textarea } from "./ui/textarea"
 import { toast } from "sonner"
 
 import {
@@ -32,6 +41,28 @@ export default function AdminDashboard() {
   const navigate = useNavigate()
 
   const [showPassword, setShowPassword] = useState(false)
+  const [selectedBooking, setSelectedBooking] = useState(null)
+
+  const [patientForm, setPatientForm] = useState({
+    patient_name: "",
+    patient_dob: "",
+    patient_age: "",
+    patient_gender: "",
+    patient_contact: "",
+    patient_aadhar: "",
+    patient_village: "",
+    patient_police_station: "",
+    patient_district: "",
+    patient_pincode: "",
+    patient_address: "",
+    medical_condition: "",
+    caretaker_name: "",
+    caretaker_phone: "",
+    caretaker_relation: "",
+    caretaker_aadhar: "",
+    caretaker_address: "",
+  })
+
   const [driverForm, setDriverForm] = useState({
     name: "",
     phone: "",
@@ -71,7 +102,6 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify({ password: newPassword }),
       })
-
       if (!res.ok) throw new Error()
       toast.success("Password updated!")
     } catch {
@@ -85,7 +115,6 @@ export default function AdminDashboard() {
       toast.error("Select driver first")
       return
     }
-
     try {
       await assignDriver(driverId, bookingId)
       toast.success("Driver assigned!")
@@ -100,7 +129,6 @@ export default function AdminDashboard() {
       toast.error("All fields required")
       return
     }
-
     try {
       await createDriver(driverForm)
       toast.success("Driver created!")
@@ -111,11 +139,80 @@ export default function AdminDashboard() {
     }
   }
 
-  // Helper for status colors
+  // ✅ Auto-calculate age from DOB
+  const calculateAge = (dob) => {
+    if (!dob) return ""
+    const birthDate = new Date(dob)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const m = today.getMonth() - birthDate.getMonth()
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--
+    return age >= 0 ? age : ""
+  }
+
+  // ✅ Open dialog and pre-fill existing data
+  const openPatientDialog = (booking) => {
+    setSelectedBooking(booking)
+    setPatientForm({
+      patient_name: booking.patient_name || "",
+      patient_dob: booking.patient_dob || "",
+      patient_age: booking.patient_age || "",
+      patient_gender: booking.patient_gender || "",
+      patient_contact: booking.patient_contact || "",
+      patient_aadhar: booking.patient_aadhar || "",
+      patient_village: booking.patient_village || "",
+      patient_police_station: booking.patient_police_station || "",
+      patient_district: booking.patient_district || "",
+      patient_pincode: booking.patient_pincode || "",
+      patient_address: booking.patient_address || "",
+      medical_condition: booking.medical_condition || "",
+      caretaker_name: booking.caretaker_name || "",
+      caretaker_phone: booking.caretaker_phone || "",
+      caretaker_relation: booking.caretaker_relation || "",
+      caretaker_aadhar: booking.caretaker_aadhar || "",
+      caretaker_address: booking.caretaker_address || "",
+    })
+  }
+
+  // ✅ Save patient + caretaker details
+  const handleSavePatient = async () => {
+    try {
+      const token = localStorage.getItem("token")
+
+      // Only send non-empty fields
+      const cleanedForm = {}
+      for (const [key, value] of Object.entries(patientForm)) {
+        if (value !== "" && value !== null && value !== undefined) {
+          cleanedForm[key] = value
+        }
+      }
+
+      const res = await fetch(
+        `${API_BASE_URL}/bookings/patient-details/${selectedBooking.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(cleanedForm),
+        }
+      )
+
+      if (!res.ok) throw new Error()
+
+      toast.success("Patient & Caretaker details saved!")
+      setSelectedBooking(null)
+      fetchData()
+    } catch {
+      toast.error("Failed to save details")
+    }
+  }
+
   const getStatusColor = (status) => {
-    if (status === "pending") return "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50";
-    if (status === "assigned" || status === "online") return "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50";
-    return "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50";
+    if (status === "pending") return "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50"
+    if (status === "assigned" || status === "online") return "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+    return "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50"
   }
 
   if (loading) {
@@ -132,8 +229,8 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        
-        {/* 🔷 HEADER */}
+
+        {/* HEADER */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-xl shadow-sm border border-slate-100">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -149,7 +246,7 @@ export default function AdminDashboard() {
           </Button>
         </div>
 
-        {/* 🔷 STATS */}
+        {/* STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <Card className="border-slate-100 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-5 flex items-center gap-4">
@@ -190,7 +287,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* 🔷 CREATE DRIVER */}
+        {/* CREATE DRIVER */}
         <Card className="border-slate-100 shadow-sm">
           <CardHeader className="pb-4 border-b border-slate-100">
             <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -242,7 +339,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* 🔷 DRIVER LIST TABLE */}
+        {/* DRIVER LIST TABLE */}
         <Card className="border-slate-100 shadow-sm">
           <CardHeader className="pb-4 border-b border-slate-100">
             <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -280,8 +377,8 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <Badge variant="outline" className={getStatusColor(driver.status)}>
-                                            {driver.status}
-                                        </Badge>
+                            {driver.status}
+                          </Badge>
                         </td>
                         <td className="px-6 py-4 text-right whitespace-nowrap">
                           <Button
@@ -306,18 +403,18 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* 🔷 BOOKINGS */}
+        {/* BOOKINGS */}
         <div className="space-y-4">
           <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 pt-4">
             <ClipboardList className="h-5 w-5 text-blue-600" /> Recent Bookings
           </h2>
-          
+
           {bookings.length === 0 ? (
-             <Card className="border-slate-100 shadow-sm">
-               <CardContent className="p-8 text-center text-slate-500">
-                 No bookings available.
-               </CardContent>
-             </Card>
+            <Card className="border-slate-100 shadow-sm">
+              <CardContent className="p-8 text-center text-slate-500">
+                No bookings available.
+              </CardContent>
+            </Card>
           ) : (
             bookings.map((b) => (
               <Card key={b.id} className={`border-l-4 ${b.status === 'pending' ? 'border-l-amber-500' : 'border-l-blue-500'} bg-white shadow-sm hover:shadow-md transition-shadow`}>
@@ -334,8 +431,8 @@ export default function AdminDashboard() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <p className="text-slate-700">
-                      <span className="font-medium text-slate-500">Patient: </span> 
-                      {b.patient_name}
+                      <span className="font-medium text-slate-500">Booker: </span>
+                      {b.booker_name} ({b.booker_phone})
                     </p>
                     <div className="flex gap-2 text-slate-700">
                       <MapPin className="h-4 w-4 mt-0.5 text-slate-400 shrink-0" />
@@ -346,9 +443,33 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* ✅ Assign Section */}
+                  {/* Patient/Caretaker status indicator */}
+                  {b.patient_name ? (
+                    <p className="text-xs text-emerald-600 flex items-center gap-1">
+                      <Heart className="h-3 w-3" /> Patient details filled
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-600 flex items-center gap-1">
+                      <Heart className="h-3 w-3" /> Patient details pending
+                    </p>
+                  )}
+
+                  {/* Action buttons row */}
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-dashed border-slate-200">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      onClick={() => openPatientDialog(b)}
+                    >
+                      <Heart className="h-4 w-4 mr-1" />
+                      {b.patient_name ? "Edit Patient Details" : "Fill Patient Details"}
+                    </Button>
+                  </div>
+
+                  {/* Assign Section */}
                   {b.status === "pending" && (
-                    <div className="mt-4 pt-4 border-t border-dashed border-slate-200 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                    <div className="mt-2 pt-4 border-t border-dashed border-slate-200 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
                       <Select
                         onValueChange={(value) =>
                           setSelectedDriver((prev) => ({ ...prev, [b.id]: value }))
@@ -365,8 +486,8 @@ export default function AdminDashboard() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button 
-                        onClick={() => handleAssign(b.id)} 
+                      <Button
+                        onClick={() => handleAssign(b.id)}
                         className="bg-emerald-600 hover:bg-emerald-700 shadow-sm w-full sm:w-auto"
                       >
                         <UserCheck className="h-4 w-4 mr-2" /> Assign Driver
@@ -380,6 +501,263 @@ export default function AdminDashboard() {
         </div>
 
       </div>
+
+      {/* ==================== PATIENT + CARETAKER DIALOG ==================== */}
+      <Dialog
+        open={!!selectedBooking}
+        onOpenChange={() => setSelectedBooking(null)}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-blue-600" />
+              Patient & Caretaker Details
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-4">
+
+            {/* ---- PATIENT DETAILS ---- */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 font-semibold text-slate-800 border-b pb-2">
+                <UserIcon className="h-4 w-4 text-blue-600" />
+                Patient Details
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Patient Name</Label>
+                  <Input
+                    placeholder="Full Name"
+                    value={patientForm.patient_name}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, patient_name: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Date of Birth</Label>
+                  <Input
+                    type="date"
+                    value={patientForm.patient_dob}
+                    onChange={(e) => {
+                      const dob = e.target.value
+                      const age = calculateAge(dob)
+                      setPatientForm({
+                        ...patientForm,
+                        patient_dob: dob,
+                        patient_age: age,
+                      })
+                    }}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Age</Label>
+                  <Input
+                    placeholder="Age"
+                    type="number"
+                    value={patientForm.patient_age}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, patient_age: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Gender</Label>
+                  <Select
+                    value={patientForm.patient_gender}
+                    onValueChange={(value) =>
+                      setPatientForm({ ...patientForm, patient_gender: value })
+                    }
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select Gender" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border shadow-lg z-50">
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Contact Number</Label>
+                  <Input
+                    placeholder="Phone Number"
+                    value={patientForm.patient_contact}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, patient_contact: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Aadhar Number(optional)</Label>
+                  <Input
+                    placeholder="Aadhar Number"
+                    value={patientForm.patient_aadhar}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, patient_aadhar: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Village</Label>
+                  <Input
+                    placeholder="Village"
+                    value={patientForm.patient_village}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, patient_village: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Police Station</Label>
+                  <Input
+                    placeholder="Police Station"
+                    value={patientForm.patient_police_station}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, patient_police_station: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">District</Label>
+                  <Input
+                    placeholder="District"
+                    value={patientForm.patient_district}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, patient_district: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Pincode</Label>
+                  <Input
+                    placeholder="Pincode"
+                    value={patientForm.patient_pincode}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, patient_pincode: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs text-slate-600">Patient Address</Label>
+                  <Input
+                    placeholder="Full Address"
+                    value={patientForm.patient_address}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, patient_address: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs text-slate-600">Medical Condition</Label>
+                <Textarea
+                  placeholder="Describe the medical condition or emergency..."
+                  value={patientForm.medical_condition}
+                  onChange={(e) =>
+                    setPatientForm({ ...patientForm, medical_condition: e.target.value })
+                  }
+                  className="min-h-[80px]"
+                />
+              </div>
+            </div>
+
+            {/* ---- CARETAKER DETAILS ---- */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 font-semibold text-slate-800 border-b pb-2">
+                <Users className="h-4 w-4 text-indigo-600" />
+                Caretaker Details
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Caretaker Name</Label>
+                  <Input
+                    placeholder="Full Name"
+                    value={patientForm.caretaker_name}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, caretaker_name: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Phone Number</Label>
+                  <Input
+                    placeholder="Phone Number"
+                    value={patientForm.caretaker_phone}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, caretaker_phone: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Relation to Patient</Label>
+                  <Input
+                    placeholder="e.g., Father, Mother, Spouse"
+                    value={patientForm.caretaker_relation}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, caretaker_relation: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs text-slate-600">Aadhar Number(optional)</Label>
+                  <Input
+                    placeholder="Aadhar Number"
+                    value={patientForm.caretaker_aadhar}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, caretaker_aadhar: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs text-slate-600">Address</Label>
+                  <Input
+                    placeholder="Full Address"
+                    value={patientForm.caretaker_address}
+                    onChange={(e) =>
+                      setPatientForm({ ...patientForm, caretaker_address: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SAVE BUTTON */}
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setSelectedBooking(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSavePatient}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Save Details
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,3 +1,5 @@
+# driver/router.py
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from fastapi import UploadFile, File
@@ -5,7 +7,7 @@ from datetime import datetime
 from driver.model import Driver
 import shutil
 import os
-from bookingform.model import Booking
+from bookingform.model import Booking  # ✅ IMPORT THIS
 from database import get_db
 from auth.utils import require_role
 from driver.schema import DriverCreate, StatusUpdate
@@ -57,7 +59,6 @@ def my_bookings(user=Depends(require_role("driver")), db: Session = Depends(get_
 def get_driver_bookings_endpoint(driver_id: int, db: Session = Depends(get_db)):
     return get_driver_bookings(db, driver_id)
 
-# ✅ FIXED: Uses StatusUpdate schema to prevent 422 error
 @router.put("/booking/{booking_id}")
 def update_booking_status_endpoint(
     booking_id: int,
@@ -70,7 +71,8 @@ def update_booking_status_endpoint(
         raise HTTPException(status_code=404, detail="Booking not found")
     return {"message": "Status updated", "data": result}
 
-# ✅ Uploads file, returns URL to frontend
+# ==================== UPLOAD PROOF ENDPOINTS ====================
+
 @router.post("/bookings/{booking_id}/pickup-proof")
 async def upload_pickup_proof(
     booking_id: int,
@@ -84,9 +86,18 @@ async def upload_pickup_proof(
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    return {"url": filepath}
+    # ✅ SAVE THE URL TO THE DATABASE
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
 
-# ✅ Uploads file, returns URL to frontend
+    booking.pickup_proof_url = filepath
+    db.commit()
+    db.refresh(booking)
+
+    return {"url": filepath, "message": "Pickup proof uploaded and saved"}
+
+
 @router.post("/bookings/{booking_id}/drop-proof")
 async def upload_drop_proof(
     booking_id: int,
@@ -100,4 +111,13 @@ async def upload_drop_proof(
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    return {"url": filepath}
+    # ✅ SAVE THE URL TO THE DATABASE
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    booking.drop_proof_url = filepath
+    db.commit()
+    db.refresh(booking)
+
+    return {"url": filepath, "message": "Drop proof uploaded and saved"}

@@ -16,26 +16,32 @@ class Booking(Base):
     registration_number = Column(String, nullable=False)
     booker_name = Column(String, nullable=False)
     booker_phone = Column(String, nullable=False)
+    booker_address = Column(String, nullable=True)
 
-    # Patient Info
-    patient_name = Column(String, nullable=False)
-    patient_age = Column(Integer, nullable=False)
+    # Patient Info (filled by admin later)
+    patient_name = Column(String, nullable=True)
+    patient_dob = Column(String, nullable=True)          # ✅ NEW
+    patient_age = Column(Integer, nullable=True)          # ✅ Changed to nullable
     patient_gender = Column(String, nullable=True)
+    patient_contact = Column(String, nullable=True)       # ✅ NEW
+    patient_aadhar = Column(String, nullable=True)        # ✅ Changed to nullable
+    patient_village = Column(String, nullable=True)
+    patient_police_station = Column(String, nullable=True)
+    patient_district = Column(String, nullable=True)
+    patient_pincode = Column(String, nullable=True)
+    patient_address = Column(String, nullable=True)       # ✅ NEW
+
+    medical_condition = Column(String, nullable=True)     # ✅ Changed to nullable
+
+    # Caretaker Info (filled by admin later)
+    caretaker_name = Column(String, nullable=True)
     caretaker_phone = Column(String, nullable=True)
     caretaker_relation = Column(String, nullable=True)
-    caretaker_address = Column(String, nullable=True)
     caretaker_aadhar = Column(String, nullable=True)
+    caretaker_address = Column(String, nullable=True)
 
-    patient_village = Column(String)
-    patient_police_station = Column(String)
-    patient_district = Column(String)
-    patient_pincode = Column(String)
-    patient_aadhar = Column(String)
-    caretaker_name = Column(String, nullable=True)
-    
     booking_date = Column(String)
     booking_time = Column(String)
-    medical_condition = Column(String, nullable=True)
     ambulance_type = Column(String, nullable=True)
 
     # Addresses
@@ -49,7 +55,7 @@ class Booking(Base):
     # Status
     status = Column(String, default="pending")
 
-    # ✅ PROOF AND KM COLUMNS (BOOKING WISE)
+    # Proof and KM columns
     pickup_proof_url = Column(String, nullable=True)
     pickup_km = Column(Float, nullable=True)
     pickup_time = Column(DateTime, nullable=True)

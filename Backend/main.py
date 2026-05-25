@@ -33,15 +33,39 @@ app.add_middleware(
     allow_origins=[
         "https://moambulanceseba.com",
         "http://moambulanceseba.com",
-        "http://localhost:8001"
-        ],
+        "http://localhost:8001",
+        "http://localhost:4179",
+        "http://127.0.0.1:4179",
+
+        "http://localhost:8001",
+        "http://127.0.0.1:8001",
+
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Serve React build assets
-app.mount("/assets", StaticFiles(directory="../frontend/dist/assets"), name="assets")
+# ================= PATHS =================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+FRONTEND_DIR = os.path.abspath(
+    os.path.join(BASE_DIR, "../frontend/dist")
+)
+
+ASSETS_DIR = os.path.join(FRONTEND_DIR, "assets")
+
+UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
+
+# ================= STATIC FILES =================
+
+# React assets
+app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+
+# Uploaded images
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+app.mount("/api/uploads", StaticFiles(directory=UPLOADS_DIR), name="api-uploads")  # ✅ ADD THIS
 
 # ================= API ROUTES =================
 app.include_router(auth_router, prefix="/api")
@@ -50,11 +74,12 @@ app.include_router(admin_router, prefix="/api")
 app.include_router(driver_router, prefix="/api")
 app.include_router(booking_router, prefix="/api")
 
-# ================= UPLOADS =================
-os.makedirs("uploads", exist_ok=True)
-
-
-# Serve React Frontend
+# ================= SERVE REACT =================
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
-    return FileResponse("../frontend/dist/index.html")
+    file_path = os.path.join(FRONTEND_DIR, full_path)
+
+    if full_path != "" and os.path.exists(file_path):
+        return FileResponse(file_path)
+
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))

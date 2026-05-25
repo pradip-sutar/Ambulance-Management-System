@@ -206,7 +206,7 @@ export default function AboutPage() {
                 Operating from Dharmadaspur, Mahanga, Jagannathpur, Salepur, Badachana, Cuttack, our free ambulance service was created to bridge the critical gap in emergency medical transport for rural and underserved communities. We operate 24/7, ensuring that a reliable, fully equipped ambulance is just a call away.
               </p>
               <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
-                We handle everything from basic patient transport to critical care transfers, completely free of cost. Our dedicated drivers and medical staff are trained to handle emergencies with care and urgency.
+                We handle everything from basic patient transport to critical care transfers, completely free of cost. Our dedicated drivers are trained to handle emergencies with care .
               </p>
             </div>
 

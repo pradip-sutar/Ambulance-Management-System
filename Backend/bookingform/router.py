@@ -5,7 +5,8 @@ from database import get_db
 
 from bookingform.schema import (
     BookingCreate,
-    BookingResponse
+    BookingResponse,
+    PatientDetailUpdate,
 )
 
 from bookingform.service import create_booking
@@ -15,6 +16,7 @@ router = APIRouter(
     prefix="/bookings",
     tags=["Bookings"]
 )
+
 
 # ================= CREATE BOOKING =================
 
@@ -32,13 +34,11 @@ def add_booking(
 def get_bookings(
     db: Session = Depends(get_db)
 ):
-
     bookings = (
         db.query(Booking)
         .options(joinedload(Booking.driver))
         .all()
     )
-
     return bookings
 
 
@@ -52,14 +52,12 @@ def get_my_bookings(
     phone: str,
     db: Session = Depends(get_db)
 ):
-
     bookings = (
         db.query(Booking)
         .options(joinedload(Booking.driver))
         .filter(Booking.booker_phone == phone)
         .all()
     )
-
     return bookings
 
 
@@ -73,13 +71,28 @@ def get_single_booking(
     booking_id: int,
     db: Session = Depends(get_db)
 ):
-
     booking = (
         db.query(Booking)
         .options(joinedload(Booking.driver))
         .filter(Booking.id == booking_id)
         .first()
     )
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    return booking
+
+
+# ================= UPDATE PATIENT DETAILS (ADMIN) =================
+
+@router.put("/patient-details/{booking_id}")
+def update_patient_details(
+    booking_id: int,
+    data: PatientDetailUpdate,
+    db: Session = Depends(get_db)
+):
+    booking = db.query(Booking).filter(
+        Booking.id == booking_id
+    ).first()
 
     if not booking:
         raise HTTPException(
@@ -87,4 +100,15 @@ def get_single_booking(
             detail="Booking not found"
         )
 
-    return booking
+    update_data = data.dict(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(booking, field, value)
+
+    db.commit()
+    db.refresh(booking)
+
+    return {
+        "message": "Patient details updated successfully",
+        "data": booking
+    }

@@ -21,25 +21,10 @@ import {
   DialogDescription,
 } from "./ui/dialog"
 import { toast } from "sonner"
-import { User, Heart, Users, MapPin, Ambulance } from "lucide-react"
+import { User, MapPin, Ambulance } from "lucide-react"
 
 /* ---------------- HELPERS ---------------- */
 const MapPicker = lazy(() => import("./ui/MapPicker"))
-
-const calculateAge = (dob) => {
-  if (!dob) return ""
-  const birthDate = new Date(dob)
-  const today = new Date()
-
-  let age = today.getFullYear() - birthDate.getFullYear()
-  const m = today.getMonth() - birthDate.getMonth()
-
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--
-  }
-
-  return age >= 0 ? age : ""
-}
 
 /* ---------------- MAIN COMPONENT ---------------- */
 
@@ -49,14 +34,11 @@ const hospitals = [
   { name: "Community Health Centre", address: "Barchana" },
   { name: "Community Health Centre", address: "Jagannathpur" },
   { name: "Community Health Centre", address: "Salepur" },
-  { name: "Satya Sai Hospital", address: "Salepur" },
+  
 ]
 
 const ambulanceTypes = [
   { value: "basic", label: "Basic" },
-  { value: "als", label: "Advanced Life Support" },
-  { value: "icu", label: "ICU" },
-  { value: "neonatal", label: "Neonatal" },
 ]
 
 export function BookingForm({ onSubmit }) {
@@ -65,31 +47,14 @@ export function BookingForm({ onSubmit }) {
   const [myBookings, setMyBookings] = useState([])
   const [isMapOpen, setIsMapOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [successOpen, setSuccessOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     bookerName: "",
     bookerPhone: "",
     bookerAddress: "",
-    patientName: "",
-    patientDob: "",
-    patientAge: "",
-    patientGender: "",
-    patientContact: "",
-    aadharNumber: "",
-    patientAddress: "",
-    patientVillage: "",
-    patientPS: "",
-    patientDistrict: "",
-    patientPincode: "",
-    patientAadhar: "",
     bookingDate: "",
     bookingTime: "",
-    medicalCondition: "",
-    caretakerName: "",
-    caretakerPhone: "",
-    caretakerRelation: "",
-    caretakerAddress: "",
-    caretakerAadharNumber: "",
     pickupAddress: "",
     dropAddress: "",
     ambulanceType: "",
@@ -105,15 +70,13 @@ export function BookingForm({ onSubmit }) {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      registrationNumber: "AMB-" + Date.now().toString().slice(-8),
+      registrationNumber: `AMB-0${49 + myBookings.length + 1}`,
     }))
   }, [])
 
   useEffect(() => {
     const phone = localStorage.getItem("user_phone")
-    if (phone) {
-      loadBookings(phone)
-    }
+    if (phone) loadBookings(phone)
   }, [])
 
   const loadBookings = async (phone) => {
@@ -127,19 +90,11 @@ export function BookingForm({ onSubmit }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    let updated = { ...formData, [name]: value }
-    if (name === "patientDob") {
-      updated.patientAge = calculateAge(value)
-    }
-    setFormData(updated)
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSelectChange = (value) => {
     setFormData((prev) => ({ ...prev, ambulanceType: value }))
-  }
-
-  const handleGenderChange = (value) => {
-    setFormData((prev) => ({ ...prev, patientGender: value }))
   }
 
   const handleHospitalSelect = (value) => {
@@ -157,23 +112,7 @@ export function BookingForm({ onSubmit }) {
     e.preventDefault()
     setIsSubmitting(true)
 
-    const requiredFields = [
-      "bookerName",
-      "bookerPhone",
-      "patientName",
-      "patientDob",
-      "patientGender",
-      "patientContact",
-      "patientVillage",
-      "patientPS",
-      "patientDistrict",
-      "patientPincode",
-      "patientAadhar",
-      "medicalCondition",
-      "pickupAddress",
-      "ambulanceType",
-    ]
-
+    const requiredFields = ["bookerName", "bookerPhone", "pickupAddress", "ambulanceType"]
     const missing = requiredFields.filter((f) => !formData[f])
 
     if (missing.length > 0) {
@@ -186,51 +125,28 @@ export function BookingForm({ onSubmit }) {
       registration_number: formData.registrationNumber,
       booker_name: formData.bookerName,
       booker_phone: formData.bookerPhone,
-      patient_name: formData.patientName,
-      patient_age: Number(formData.patientAge),
-      patient_gender: formData.patientGender,
-      patient_contact: formData.patientContact,
-      patient_address: formData.patientAddress,
-      patient_village: formData.patientVillage,
-      patient_police_station: formData.patientPS,
-      patient_district: formData.patientDistrict,
-      patient_pincode: formData.patientPincode,
-      patient_aadhar: formData.patientAadhar,
-      medical_condition: formData.medicalCondition,
-      caretaker_name: formData.caretakerName,
-      caretaker_phone: formData.caretakerPhone,
-      caretaker_relation: formData.caretakerRelation,
-      caretaker_address: formData.caretakerAddress,
-      caretaker_aadhar: formData.caretakerAadharNumber,
+      booker_address: formData.bookerAddress,
       pickup_address: formData.pickupAddress,
       drop_address: formData.dropAddress,
       ambulance_type: formData.ambulanceType,
       booking_date: formData.bookingDate,
       booking_time: formData.bookingTime,
       pickup_location: pickupLocation
-        ? {
-            lat: pickupLocation.lat,
-            lng: pickupLocation.lng,
-          }
+        ? { lat: pickupLocation.lat, lng: pickupLocation.lng }
         : null,
     }
 
     try {
       const data = await createBooking(payload)
-
-      toast.success("Ambulance booked successfully!")
-
-      // Auto open call dialer
+      
+      // ✅ DIRECT CALL immediately upon successful booking
       window.location.href = "tel:+919776696669"
-
+      
+      setSuccessOpen(true)
       if (onSubmit) onSubmit(data)
-
+      
       const phone = localStorage.getItem("user_phone")
-
-      if (phone) {
-        loadBookings(phone)
-      }
-
+      if (phone) loadBookings(phone)
     } catch (error) {
       toast.error(error.message || "Booking failed")
     } finally {
@@ -250,74 +166,19 @@ export function BookingForm({ onSubmit }) {
 
         <CardContent className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* BOOKER */}
+
+            {/* BOOKING PERSON */}
             <Section icon={<User />} title="Booking Person">
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 <Field label="Name *" name="bookerName" value={formData.bookerName} onChange={handleInputChange} />
                 <Field label="Phone *" name="bookerPhone" value={formData.bookerPhone} onChange={handleInputChange} />
-                <div className="sm:col-span-2 lg:col-span-2">
+                <div className="sm:col-span-2 lg:col-span-3">
                   <Field label="Address" name="bookerAddress" value={formData.bookerAddress} onChange={handleInputChange} />
                 </div>
               </div>
             </Section>
 
-            {/* PATIENT */}
-            <Section icon={<Heart />} title="Patient Details">
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                <Field label="Patient Name *" name="patientName" value={formData.patientName} onChange={handleInputChange} />
-                <Field label="DOB *" type="date" name="patientDob" value={formData.patientDob} onChange={handleInputChange} />
-                <Field label="Age" name="patientAge" value={formData.patientAge} disabled />
-
-                <SelectField
-                  label="Gender *"
-                  value={formData.patientGender}
-                  onChange={handleGenderChange}
-                  options={[
-                    { value: "male", label: "Male" },
-                    { value: "female", label: "Female" },
-                    { value: "other", label: "Other" },
-                  ]}
-                />
-
-                <Field label="Contact *" name="patientContact" value={formData.patientContact} onChange={handleInputChange} />
-                <Field label="Aadhaar Number *" name="patientAadhar" value={formData.patientAadhar} onChange={handleInputChange} />
-                <Field label="Village *" name="patientVillage" value={formData.patientVillage} onChange={handleInputChange} />
-                <Field label="Police Station *" name="patientPS" value={formData.patientPS} onChange={handleInputChange} />
-                <Field label="District *" name="patientDistrict" value={formData.patientDistrict} onChange={handleInputChange} />
-                <Field label="Pincode *" name="patientPincode" value={formData.patientPincode} onChange={handleInputChange} />
-                
-                <div className="sm:col-span-2 lg:col-span-2">
-                  <Field label="Patient Address" name="patientAddress" value={formData.patientAddress} onChange={handleInputChange} />
-                </div>
-              </div>
-              
-              <div className="mt-3">
-                <Label>Medical Condition *</Label>
-                <Textarea
-                  name="medicalCondition"
-                  placeholder="Describe the medical condition or emergency..."
-                  value={formData.medicalCondition}
-                  onChange={handleInputChange}
-                  className="min-h-[80px]"
-                />
-              </div>
-            </Section>
-
-            {/* CARETAKER */}
-            <Section icon={<Users />} title="Caretaker Details">
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                <Field label="Name" name="caretakerName" value={formData.caretakerName} onChange={handleInputChange} />
-                <Field label="Phone" name="caretakerPhone" value={formData.caretakerPhone} onChange={handleInputChange} />
-                <Field label="Relation" name="caretakerRelation" value={formData.caretakerRelation} onChange={handleInputChange} />
-                <Field label="Aadhaar No" name="caretakerAadharNumber" value={formData.caretakerAadharNumber} onChange={handleInputChange} />
-                <div className="sm:col-span-2 lg:col-span-4">
-                  <Field label="Address" name="caretakerAddress" value={formData.caretakerAddress} onChange={handleInputChange} />
-                </div>
-              </div>
-            </Section>
-
-            {/* SERVICE */}
+            {/* SERVICE DETAILS */}
             <Section icon={<MapPin />} title="Service Details">
               <div className="space-y-3">
                 <div className="space-y-1.5">
@@ -348,11 +209,9 @@ export function BookingForm({ onSubmit }) {
                   <div className="space-y-1.5">
                     <Label>Drop Hospital</Label>
                     <Select value={formData.dropAddress} onValueChange={handleHospitalSelect}>
-                      {/* ✅ ADDED bg-white to trigger */}
                       <SelectTrigger className="w-full bg-white border">
                         <SelectValue placeholder="Select Hospital" />
                       </SelectTrigger>
-                      {/* ✅ ADDED bg-white border shadow-lg z-50 to fix transparency */}
                       <SelectContent className="bg-white border shadow-lg z-50">
                         {hospitals.map((h, i) => (
                           <SelectItem
@@ -372,11 +231,9 @@ export function BookingForm({ onSubmit }) {
                   <div className="space-y-1.5">
                     <Label>Ambulance Type *</Label>
                     <Select value={formData.ambulanceType} onValueChange={handleSelectChange}>
-                      {/* ✅ ADDED bg-white to trigger */}
                       <SelectTrigger className="w-full bg-white border">
                         <SelectValue placeholder="Select Ambulance Type" />
                       </SelectTrigger>
-                      {/* ✅ ADDED bg-white border shadow-lg z-50 to fix transparency */}
                       <SelectContent className="bg-white border shadow-lg z-50">
                         {ambulanceTypes.map((t) => (
                           <SelectItem key={t.value} value={t.value}>
@@ -398,16 +255,16 @@ export function BookingForm({ onSubmit }) {
             )}
 
             <Button
-  type="submit"
-  disabled={isSubmitting}
-  className="w-full h-12 text-lg mt-2 bg-blue-600 hover:bg-blue-700 text-white"
->
-  {isSubmitting ? "Dispatching..." : "Request Ambulance"}
-</Button>
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-12 text-lg mt-2 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isSubmitting ? "Dispatching..." : "Request Ambulance"}
+            </Button>
 
             {mounted && (
               <p className="text-xs text-gray-500 text-center mt-1">
-                Reg No: {formData.registrationNumber}
+                Booking ID: {formData.registrationNumber}
               </p>
             )}
           </form>
@@ -416,9 +273,6 @@ export function BookingForm({ onSubmit }) {
 
       {/* USER BOOKINGS */}
       <div className="space-y-3">
-        {myBookings.length === 0 && (
-          <p className="text-muted-foreground text-center py-2"></p>
-        )}
         {myBookings.map((booking) => (
           <Card key={booking.id} className="overflow-hidden">
             <CardContent className="p-3 space-y-3">
@@ -430,10 +284,6 @@ export function BookingForm({ onSubmit }) {
               </div>
 
               <div className="space-y-1 text-sm">
-                <div className="flex flex-col sm:flex-row">
-                  <span className="font-medium text-gray-500 w-full sm:w-32">Patient:</span>
-                  <span className="break-words">{booking.patient_name}</span>
-                </div>
                 <div className="flex flex-col sm:flex-row">
                   <span className="font-medium text-gray-500 w-full sm:w-32">Pickup:</span>
                   <span className="break-words text-gray-700">{booking.pickup_address}</span>
@@ -449,7 +299,7 @@ export function BookingForm({ onSubmit }) {
                   </div>
                   <div className="flex flex-col sm:flex-row">
                     <span className="font-medium text-gray-600 w-full sm:w-24">Phone:</span>
-                    <span className="text-blue-600 hover:underline cursor-pointer">{booking.driver.phone}</span>
+                    <span className="text-blue-600">{booking.driver.phone}</span>
                   </div>
                   <div className="flex flex-col sm:flex-row">
                     <span className="font-medium text-gray-600 w-full sm:w-24">Vehicle:</span>
@@ -466,6 +316,33 @@ export function BookingForm({ onSubmit }) {
           </Card>
         ))}
       </div>
+
+      {/* ✅ SUCCESS DIALOG — No Call Button, Shows Booker Name */}
+      <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
+        <DialogContent className="max-w-[350px] text-center">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-center gap-2 text-green-700">
+              <Ambulance className="h-4 w-4" />
+              Booking Confirmed!
+            </DialogTitle>
+            {formData.bookerName && (
+                <div className="text-sm text-slate-700 justify-center flex items-center gap-2 mt-0">
+                  Thank you <span className="font-semibold">{formData.bookerName}</span>
+                </div>
+              )}
+            <DialogDescription className="space-y-1 pt-0 justify-center flex items-center flex-col">
+              <p>Your ambulance has been booked successfully.</p>
+              
+              {/* ✅ BOOKING PERSON NAME */}
+              
+
+              <div className="font-bold text-sm text-blue-600">
+                Booking ID: {formData.registrationNumber}
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
 
       {/* MAP DIALOG */}
       <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
@@ -510,28 +387,6 @@ function Field({ label, ...props }) {
     <div className="space-y-1">
       <Label className="text-xs font-medium text-gray-600">{label}</Label>
       <Input {...props} className="w-full h-9 text-sm" />
-    </div>
-  )
-}
-
-function SelectField({ label, value, onChange, options }) {
-  return (
-    <div className="space-y-1">
-      <Label className="text-xs font-medium text-gray-600">{label}</Label>
-      <Select value={value} onValueChange={onChange}>
-        {/* ✅ ADDED bg-white to trigger */}
-        <SelectTrigger className="w-full h-9 text-sm bg-white border">
-          <SelectValue placeholder="Select" />
-        </SelectTrigger>
-        {/* ✅ ADDED bg-white border shadow-lg z-50 to fix transparency */}
-        <SelectContent className="bg-white border shadow-lg z-50">
-          {options.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
     </div>
   )
 }

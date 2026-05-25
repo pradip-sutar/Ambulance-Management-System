@@ -71,7 +71,38 @@ export default function ReportPage() {
     return `${API_BASE_URL}/${cleanPath}`;
   };
 
-  // ✅ HELPER: Formats dates cleanly (e.g., "22 May, 2026 | 12:52 PM")
+  // ✅✅✅ NEW HELPER: Convert image URL to base64 data URL
+  // This solves html2canvas CORS issues — base64 images don't need CORS
+  const toBase64 = async (url) => {
+    if (!url) return null;
+    try {
+      const res = await fetch(url, { mode: "cors" });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      // Retry without cors mode (for same-origin resources)
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        return null;
+      }
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -86,7 +117,6 @@ export default function ReportPage() {
     });
   };
 
-  // ✅ HELPER: Status badge colors
   const getStatusColor = (status) => {
     if (status === "pending") return "bg-amber-50 text-amber-700 border-amber-200";
     if (status === "assigned" || status === "online") return "bg-emerald-50 text-emerald-700 border-emerald-200";
@@ -98,15 +128,12 @@ export default function ReportPage() {
     fetchReports()
   }, [])
 
-  // ✅ FIXED: Safely extract the array from the API response
   const fetchReports = async () => {
     try {
       const res = await getBookings()
-      // Handle cases where API returns { data: [...] } or { bookings: [...] } instead of a plain array
       const data = Array.isArray(res) 
         ? res 
         : res?.data || res?.bookings || res?.results || []
-      
       setBookings(data)
     } catch {
       toast.error("Failed to load reports")
@@ -231,6 +258,24 @@ export default function ReportPage() {
     let iframe = null
 
     try {
+      // ✅✅✅ CONVERT ALL IMAGES TO BASE64 FIRST
+      // This is the key fix — base64 images have no CORS issues with html2canvas
+      const [
+        logoBase64,
+        photoBase64,
+        signatureBase64,
+        footerBase64,
+        pickupBase64,
+        dropBase64,
+      ] = await Promise.all([
+        toBase64(ambulanceLogo),
+        toBase64(ambulancePhoto),
+        toBase64("/signature.png"),
+        toBase64(footerPhoto),
+        toBase64(getImageUrl(b.pickup_proof_url)),
+        toBase64(getImageUrl(b.drop_proof_url)),
+      ])
+
       iframe = document.createElement("iframe")
       iframe.style.position = "absolute"
       iframe.style.left = "-9999px"
@@ -241,9 +286,6 @@ export default function ReportPage() {
       document.body.appendChild(iframe)
 
       const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
-
-      const pickupPhotoUrl = getImageUrl(b.pickup_proof_url);
-      const dropPhotoUrl = getImageUrl(b.drop_proof_url);
 
       iframeDoc.open()
       iframeDoc.write(`
@@ -271,7 +313,10 @@ export default function ReportPage() {
 
               <!-- Header Section -->
               <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                <img src="${ambulanceLogo}" style="width:180px; height:180px; border-radius:50%; object-fit:cover;" crossorigin="anonymous" />
+                ${logoBase64
+                  ? `<img src="${logoBase64}" style="width:180px; height:180px; border-radius:50%; object-fit:cover;" />`
+                  : `<div style="width:180px; height:180px; border-radius:50%; background:#f0f0f0;"></div>`
+                }
                 <div style="text-align:center;flex:1;color:#000000;">
                   <h2 style="color:#008000;font-size:30px;margin:0;">FREE</h2>
                   <h2 style="color:#FF0000;font-size:30px;margin:0;">AMBULANCE</h2>
@@ -279,7 +324,10 @@ export default function ReportPage() {
                   <h3 style="margin:0px;padding:0px;">Dharmadaspur,Mahanga,Cuttack,Pin:754204</h3>
                   <h3 style="margin:0px;padding:0px;">📞 9776696669,9348616669,9006706355</h3>
                 </div>
-                <img src="${ambulancePhoto}" style="width:220px; height:220px; border-radius:20px; object-fit:cover;padding-right:10px;" crossorigin="anonymous" />
+                ${photoBase64
+                  ? `<img src="${photoBase64}" style="width:220px; height:220px; border-radius:20px; object-fit:cover;padding-right:10px;" />`
+                  : `<div style="width:220px; height:220px; border-radius:20px; background:#f0f0f0;"></div>`
+                }
               </div>
              
               <!-- Details Section -->
@@ -288,8 +336,8 @@ export default function ReportPage() {
                   <div style="flex:2;">
                     <p><strong>Date:</strong> ${b.created_at ? new Date(b.created_at).toLocaleDateString() : "N/A"}</p>
                     <p><strong>Service ID:</strong> ${b.id}</p>
-                    <p><strong>Patient Name:</strong> ${b.patient_name}</p>
-                    <p><strong>Contact Number:</strong> ${b.patient_contact || b.booker_phone}</p>
+                    <p><strong>Patient Name:</strong> ${b.patient_name || "N/A"}</p>
+                    <p><strong>Contact Number:</strong> ${b.patient_contact || b.booker_phone || "N/A"}</p>
                     <p><strong>Pickup Location:</strong> ${b.pickup_address || "N/A"}</p>
                     <p><strong>Drop Location:</strong> ${b.drop_address || "N/A"}</p>
                     <p><strong>Driver Name:</strong> ${b.driver?.name || "N/A"}</p>
@@ -297,19 +345,19 @@ export default function ReportPage() {
                     <p><strong>Ambulance Type:</strong> ${b.ambulance_type || "N/A"}</p>
                   </div>
 
-                  ${(pickupPhotoUrl || dropPhotoUrl) ? `
+                  ${(pickupBase64 || dropBase64) ? `
                   <div style="flex:1; display:flex; flex-direction:column; gap:12px; align-items:center;">
                     <div style="text-align:center;">
                       <p style="margin:0 0 5px 0; font-size:13px; font-weight:bold;">Pickup</p>
-                      ${pickupPhotoUrl
-                        ? `<img src="${pickupPhotoUrl}" crossorigin="anonymous" style="width:200px; height:170px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />`
+                      ${pickupBase64
+                        ? `<img src="${pickupBase64}" style="width:200px; height:170px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />`
                         : `<div style="width:200px; height:170px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px; color:#888; font-size:12px;">No Photo</div>`
                       }
                     </div>
                     <div style="text-align:center;">
                       <p style="margin:0 0 5px 0; font-size:13px; font-weight:bold;">Drop</p>
-                      ${dropPhotoUrl
-                        ? `<img src="${dropPhotoUrl}" crossorigin="anonymous" style="width:200px; height:170px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />`
+                      ${dropBase64
+                        ? `<img src="${dropBase64}" style="width:200px; height:170px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />`
                         : `<div style="width:200px; height:170px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px; color:#888; font-size:12px;">No Photo</div>`
                       }
                     </div>
@@ -328,7 +376,10 @@ export default function ReportPage() {
               <!-- Signature Section -->
               <div style="margin-top:40px; display:flex; justify-content:flex-end; padding:0 40px;">
                <div style="text-align:center; width:45%;">
-                  <img src="/signature.png" crossorigin="anonymous" style="width:160px; height:70px; object-fit:contain; margin-bottom:-10px;" />
+                  ${signatureBase64
+                    ? `<img src="${signatureBase64}" style="width:160px; height:70px; object-fit:contain; margin-bottom:-10px;" />`
+                    : `<div style="width:160px; height:70px;"></div>`
+                  }
                   <div style="border-bottom:2px solid #000; width:100%; margin-bottom:8px;"></div>
                   <p style="margin:0; font-weight:bold; font-size:16px;">Founder Signature</p>
                   <p style="margin:4px 0 0 0; color:#555; font-size:13px;">Nagendra Nath</p>
@@ -337,7 +388,10 @@ export default function ReportPage() {
 
               <!-- Footer Photo -->
               <div style="margin-top:30px; border-radius:15px; overflow:hidden; border:2px solid #008000; position:relative;">
-                <img src="${footerPhoto}" style="width:100%; height:120px; object-fit:cover; display:block;" crossorigin="anonymous" />
+                ${footerBase64
+                  ? `<img src="${footerBase64}" style="width:100%; height:120px; object-fit:cover; display:block;" />`
+                  : `<div style="width:100%; height:120px; background:#f0f0f0;"></div>`
+                }
                 <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,128,0,0.9)); padding:6px; text-align:center; color:#ffffff;">
                   <p style="margin:0; font-size:16px; font-weight:bold; letter-spacing:1px;">FOR EMERGENCY &amp; FREE AMBULANCE SERVICE</p>
                   <p style="margin:3px 0 0 0;font-weight:bold; font-size:15px; opacity:0.9;">Available 24/7 • Completely Free • Serving the Community</p>
@@ -356,6 +410,7 @@ export default function ReportPage() {
       `)
       iframeDoc.close()
 
+      // Wait for images inside iframe to load
       const images = iframeDoc.querySelectorAll("img")
       await Promise.all(
         Array.from(images).map(
@@ -391,7 +446,7 @@ export default function ReportPage() {
       const finalWidth = imgHeight > pdfHeight ? (pdfHeight * pdfWidth) / imgHeight : pdfWidth
 
       pdf.addImage(imgData, "PNG", 0, 0, finalWidth, finalHeight)
-      pdf.save(`${b.patient_name}-certificate.pdf`)
+      pdf.save(`${b.patient_name || "certificate"}-certificate.pdf`)
 
       toast.success("Certificate downloaded successfully!")
     } catch (error) {
@@ -414,7 +469,7 @@ export default function ReportPage() {
     <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
         
-        {/* 🔷 HEADER */}
+        {/* HEADER */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-xl shadow-sm border border-slate-100">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -435,7 +490,7 @@ export default function ReportPage() {
           </div>
         </div>
 
-        {/* 🔷 REPORT TYPE TABS */}
+        {/* REPORT TYPE TABS */}
         <div className="bg-slate-100 p-1.5 rounded-xl inline-flex gap-1 flex-wrap">
           {reportTabs.map((tab) => (
             <button
@@ -452,7 +507,7 @@ export default function ReportPage() {
           ))}
         </div>
 
-        {/* 🔷 FILTERS */}
+        {/* FILTERS */}
         <Card className="border-slate-100 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3 text-slate-600">
@@ -494,12 +549,11 @@ export default function ReportPage() {
           </CardContent>
         </Card>
 
-        {/* 🔷 TABLE */}
+        {/* TABLE */}
         <Card className="border-slate-100 shadow-sm overflow-hidden">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
-                {/* AMBULANCE REPORT */}
                 {reportType === "ambulance" && (
                   <>
                     <TableHeader className="bg-slate-50 border-b border-slate-100">
@@ -579,7 +633,6 @@ export default function ReportPage() {
                   </>
                 )}
 
-                {/* PATIENT REPORT */}
                 {reportType === "patient" && (
                   <>
                     <TableHeader className="bg-slate-50 border-b border-slate-100">
@@ -642,7 +695,6 @@ export default function ReportPage() {
                   </>
                 )}
 
-                {/* CARE TAKER REPORT */}
                 {reportType === "caretaker" && (
                   <>
                     <TableHeader className="bg-slate-50 border-b border-slate-100">
@@ -682,7 +734,6 @@ export default function ReportPage() {
                   </>
                 )}
 
-                {/* BOOKING PERSON REPORT */}
                 {reportType === "booking" && (
                   <>
                     <TableHeader className="bg-slate-50 border-b border-slate-100">
@@ -741,16 +792,16 @@ export default function ReportPage() {
 
       {/* IMAGE PREVIEW DIALOG */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black">
-          <DialogHeader className="p-4 bg-slate-900 border-b border-slate-700">
-            <DialogTitle className="text-white">Proof Photo Preview</DialogTitle>
+        <DialogContent className="max-w-3xl p-2 bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-center">Image Preview</DialogTitle>
           </DialogHeader>
           {selectedImage && (
-            <div className="p-4 flex items-center justify-center min-h-[400px]">
+            <div className="flex justify-center">
               <img
                 src={selectedImage}
                 alt="Preview"
-                className="min-w-full max-h-[80vh] object-contain rounded"
+                className="max-h-[80vh] w-auto rounded-lg object-contain"
               />
             </div>
           )}
