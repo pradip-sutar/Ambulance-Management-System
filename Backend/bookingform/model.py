@@ -13,7 +13,7 @@ class Booking(Base):
     driver_id = Column(Integer, ForeignKey("drivers.id"), nullable=True)
 
     # Booking Info
-    registration_number = Column(String, nullable=False)
+    registration_number = Column(String, nullable=False,unique=True)
     booker_name = Column(String, nullable=False)
     booker_phone = Column(String, nullable=False)
     booker_address = Column(String, nullable=True)

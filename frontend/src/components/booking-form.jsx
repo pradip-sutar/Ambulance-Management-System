@@ -49,46 +49,15 @@ export function BookingForm({ onSubmit }) {
   const [mounted, setMounted] = useState(false)
   const [successOpen, setSuccessOpen] = useState(false)
 // Generate registration number starting from AMB-050
-const generateRegistrationNumber = async () => {
-  try {
-    // Get existing bookings
-    const bookings = await getMyBookings()
-
-    // Start from 50
-    let nextNumber = 50
-
-    if (bookings && bookings.length > 0) {
-      // Extract numbers from existing registration numbers
-      const numbers = bookings
-        .map((booking) => {
-          const reg = booking.registration_number || ""
-
-          // Extract numeric part from AMB-050
-          const match = reg.match(/\d+/)
-
-          return match ? parseInt(match[0], 10) : 49
-        })
-        .filter((num) => !isNaN(num))
-
-      // Get highest number and add 1
-      if (numbers.length > 0) {
-        nextNumber = Math.max(...numbers) + 1
-      }
-    }
-
-    // Format with leading zeros
-    return `AMB-${String(nextNumber).padStart(3, "0")}`
-  } catch (error) {
-    console.error("Error generating registration number:", error)
-
-    // Fallback
-    return "AMB-050"
-  }
+// Generate random registration number like AMB-583
+const generateRegistrationNumber = () => {
+  const randomNumber = Math.floor(100 + Math.random() * 900)
+  return `AMB-${randomNumber}`
 }
 
 
-const loadNextRegistrationNumber = async () => {
-  const regNumber = await generateRegistrationNumber()
+const loadNextRegistrationNumber = () => {
+  const regNumber = generateRegistrationNumber()
 
   setFormData((prev) => ({
     ...prev,
@@ -203,7 +172,7 @@ if (phone) {
 
   setMyBookings(updatedBookings)
 
- const newRegNumber = await generateRegistrationNumber()
+ const newRegNumber = generateRegistrationNumber()
 
 setFormData({
   bookerName: "",
