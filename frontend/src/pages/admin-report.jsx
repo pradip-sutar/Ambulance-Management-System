@@ -142,25 +142,53 @@ export default function ReportPage() {
     }
   }
 
-  const filteredBookings = useMemo(() => {
-    return bookings.filter((b) => {
-      const patientMatch = b.patient_name?.toLowerCase().includes(filters.patient.toLowerCase())
-      const mobileMatch = (b.patient_contact || b.booker_phone || "").includes(filters.mobile)
-      const driverMatch = (b.driver?.name || "").toLowerCase().includes(filters.driver.toLowerCase())
+const filteredBookings = useMemo(() => {
+  return bookings.filter((b) => {
 
-      let dateMatch = true
-      if (filters.startDate && filters.endDate) {
-        const bookingDate = new Date(b.created_at)
-        const start = new Date(filters.startDate)
-        const end = new Date(filters.endDate)
-        end.setHours(23, 59, 59, 999)
-        dateMatch = bookingDate >= start && bookingDate <= end
-      }
+    const patientMatch = (
+      b.patient_name ||
+      b.booker_name ||
+      ""
+    )
+      .toLowerCase()
+      .includes(filters.patient.toLowerCase())
 
-      return patientMatch && mobileMatch && driverMatch && dateMatch
-    })
-  }, [bookings, filters])
+    const mobileMatch = (
+      b.patient_contact ||
+      b.booker_phone ||
+      ""
+    ).includes(filters.mobile)
 
+    const driverMatch = (
+      b.driver?.name ||
+      ""
+    )
+      .toLowerCase()
+      .includes(filters.driver.toLowerCase())
+
+    let dateMatch = true
+
+    if (filters.startDate && filters.endDate) {
+      const bookingDate = new Date(b.created_at)
+
+      const start = new Date(filters.startDate)
+      const end = new Date(filters.endDate)
+
+      end.setHours(23, 59, 59, 999)
+
+      dateMatch =
+        bookingDate >= start &&
+        bookingDate <= end
+    }
+
+    return (
+      patientMatch &&
+      mobileMatch &&
+      driverMatch &&
+      dateMatch
+    )
+  })
+}, [bookings, filters])
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
