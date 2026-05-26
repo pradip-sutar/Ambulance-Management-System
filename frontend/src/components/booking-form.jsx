@@ -48,7 +48,53 @@ export function BookingForm({ onSubmit }) {
   const [isMapOpen, setIsMapOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [successOpen, setSuccessOpen] = useState(false)
+// Generate registration number starting from AMB-050
+const generateRegistrationNumber = async () => {
+  try {
+    // Get existing bookings
+    const bookings = await getMyBookings()
 
+    // Start from 50
+    let nextNumber = 50
+
+    if (bookings && bookings.length > 0) {
+      // Extract numbers from existing registration numbers
+      const numbers = bookings
+        .map((booking) => {
+          const reg = booking.registration_number || ""
+
+          // Extract numeric part from AMB-050
+          const match = reg.match(/\d+/)
+
+          return match ? parseInt(match[0], 10) : 49
+        })
+        .filter((num) => !isNaN(num))
+
+      // Get highest number and add 1
+      if (numbers.length > 0) {
+        nextNumber = Math.max(...numbers) + 1
+      }
+    }
+
+    // Format with leading zeros
+    return `AMB-${String(nextNumber).padStart(3, "0")}`
+  } catch (error) {
+    console.error("Error generating registration number:", error)
+
+    // Fallback
+    return "AMB-050"
+  }
+}
+
+
+const loadNextRegistrationNumber = async () => {
+  const regNumber = await generateRegistrationNumber()
+
+  setFormData((prev) => ({
+    ...prev,
+    registrationNumber: regNumber,
+  }))
+}
   const [formData, setFormData] = useState({
     bookerName: "",
     bookerPhone: "",
@@ -61,8 +107,10 @@ export function BookingForm({ onSubmit }) {
     registrationNumber: "",
   })
 
-  useEffect(() => {
+useEffect(() => {
   setMounted(true)
+
+  loadNextRegistrationNumber()
 
   setFormData((prev) => ({
     ...prev,
@@ -80,14 +128,6 @@ export function BookingForm({ onSubmit }) {
   }, [])
 
 
-  useEffect(() => {
-  const nextNumber = 50 + myBookings.length
-
-  setFormData((prev) => ({
-    ...prev,
-    registrationNumber: `AMB-${String(nextNumber).padStart(3, "0")}`,
-  }))
-}, [myBookings])
 
 
   const loadBookings = async (phone) => {
@@ -163,23 +203,23 @@ if (phone) {
 
   setMyBookings(updatedBookings)
 
-  const nextNumber = 50 + updatedBookings.length
+ const newRegNumber = await generateRegistrationNumber()
 
-  setFormData({
-    bookerName: "",
-    bookerPhone: "",
-    bookerAddress: "",
-    pickupAddress: "",
-    dropAddress: "",
-    ambulanceType: "",
-    bookingDate: new Date().toISOString().split("T")[0],
-    bookingTime: new Date().toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    }),
-    registrationNumber: `AMB-${String(nextNumber).padStart(3, "0")}`,
-  })
+setFormData({
+  bookerName: "",
+  bookerPhone: "",
+  bookerAddress: "",
+  pickupAddress: "",
+  dropAddress: "",
+  ambulanceType: "",
+  bookingDate: new Date().toISOString().split("T")[0],
+  bookingTime: new Date().toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }),
+  registrationNumber: newRegNumber,
+})
 }
     } catch (error) {
       toast.error(error.message || "Booking failed")

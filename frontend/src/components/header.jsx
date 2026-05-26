@@ -66,7 +66,7 @@ export function Header() {
             <img
               src="/ambulance-seba.png"
               alt="Basanta Kumar Nath"
-              className="h-12 w-auto max-w-[280px] object-contain lg:hidden"
+              className="h-14 w-auto max-w-[280px] object-contain lg:hidden"
             />
 
             {/* MOBILE BUTTONS */}
@@ -123,7 +123,7 @@ export function Header() {
           <img
             src="/ambulance-seba.png"
             alt="Basanta Kumar Nath"
-            className="h-12 w-auto max-w-lg object-contain"
+            className="h-15 w-auto max-w-lg object-contain"
           />
         </div>
 
