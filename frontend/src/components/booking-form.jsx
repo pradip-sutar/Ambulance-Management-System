@@ -62,22 +62,33 @@ export function BookingForm({ onSubmit }) {
   })
 
   useEffect(() => {
-    setMounted(true)
-    setFormData((prev) => ({
-      ...prev,
-      bookingDate: new Date().toISOString().split("T")[0],
-      bookingTime: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      registrationNumber: `AMB-0${49 + myBookings.length + 1}`,
-    }))
-  }, [])
+  setMounted(true)
+
+  setFormData((prev) => ({
+    ...prev,
+    bookingDate: new Date().toISOString().split("T")[0],
+    bookingTime: new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  }))
+}, [])
 
   useEffect(() => {
     const phone = localStorage.getItem("user_phone")
     if (phone) loadBookings(phone)
   }, [])
+
+
+  useEffect(() => {
+  const nextNumber = 50 + myBookings.length
+
+  setFormData((prev) => ({
+    ...prev,
+    registrationNumber: `AMB-${String(nextNumber).padStart(3, "0")}`,
+  }))
+}, [myBookings])
+
 
   const loadBookings = async (phone) => {
     try {
@@ -145,8 +156,31 @@ export function BookingForm({ onSubmit }) {
       setSuccessOpen(true)
       if (onSubmit) onSubmit(data)
       
-      const phone = localStorage.getItem("user_phone")
-      if (phone) loadBookings(phone)
+     const phone = localStorage.getItem("user_phone")
+
+if (phone) {
+  const updatedBookings = await getMyBookings(phone)
+
+  setMyBookings(updatedBookings)
+
+  const nextNumber = 50 + updatedBookings.length
+
+  setFormData({
+    bookerName: "",
+    bookerPhone: "",
+    bookerAddress: "",
+    pickupAddress: "",
+    dropAddress: "",
+    ambulanceType: "",
+    bookingDate: new Date().toISOString().split("T")[0],
+    bookingTime: new Date().toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }),
+    registrationNumber: `AMB-${String(nextNumber).padStart(3, "0")}`,
+  })
+}
     } catch (error) {
       toast.error(error.message || "Booking failed")
     } finally {
