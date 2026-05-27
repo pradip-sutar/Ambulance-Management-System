@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom"
+import { useState, useEffect } from "react"
 import { Header } from "../components/header"
 import { 
   ShieldCheck, Lock, Eye, Phone, Mail, MapPin, 
@@ -9,6 +10,9 @@ import { Badge } from "../components/ui/badge"
 import { Footer } from "../components/footer"
 
 export default function PrivacyPolicyPage() {
+  useEffect(() => {
+          window.scrollTo(0, 0)
+      }, [])
   return (
     <div className="flex flex-col">
       <Header />

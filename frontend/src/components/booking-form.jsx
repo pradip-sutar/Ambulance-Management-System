@@ -198,7 +198,7 @@ setFormData({
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 md:p-6 space-y-5">
+    <div   id="booking-form" className="w-full max-w-6xl mx-auto p-4 md:p-6 space-y-5">
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">

@@ -35,9 +35,9 @@ import { Button } from "../components/ui/button"
 import { getBookings } from "../components/api/adminApi"
 
 import { toast } from "sonner"
-import { 
-  ArrowLeft, FileDown, Filter, FileText, 
-  UserRound, HeartPulse, Ambulance, ClipboardList, ImageOff 
+import {
+  ArrowLeft, FileDown, Filter, FileText,
+  UserRound, HeartPulse, Ambulance, ClipboardList, ImageOff
 } from "lucide-react"
 
 export default function ReportPage() {
@@ -48,11 +48,11 @@ export default function ReportPage() {
   const [generatingCertId, setGeneratingCertId] = useState(null)
   const [reportType, setReportType] = useState("ambulance")
   const [selectedImage, setSelectedImage] = useState(null)
-  
+
   const ambulanceLogo = "/ambulance_logo.png"
   const ambulancePhoto = "/ambulance.jpeg"
   const footerPhoto = "/footer.jpeg"
-  
+
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
   const [filters, setFilters] = useState({
@@ -131,8 +131,8 @@ export default function ReportPage() {
   const fetchReports = async () => {
     try {
       const res = await getBookings()
-      const data = Array.isArray(res) 
-        ? res 
+      const data = Array.isArray(res)
+        ? res
         : res?.data || res?.bookings || res?.results || []
       setBookings(data)
     } catch {
@@ -142,53 +142,53 @@ export default function ReportPage() {
     }
   }
 
-const filteredBookings = useMemo(() => {
-  return bookings.filter((b) => {
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((b) => {
 
-    const patientMatch = (
-      b.patient_name ||
-      b.booker_name ||
-      ""
-    )
-      .toLowerCase()
-      .includes(filters.patient.toLowerCase())
+      const patientMatch = (
+        b.patient_name ||
+        b.booker_name ||
+        ""
+      )
+        .toLowerCase()
+        .includes(filters.patient.toLowerCase())
 
-    const mobileMatch = (
-      b.patient_contact ||
-      b.booker_phone ||
-      ""
-    ).includes(filters.mobile)
+      const mobileMatch = (
+        b.patient_contact ||
+        b.booker_phone ||
+        ""
+      ).includes(filters.mobile)
 
-    const driverMatch = (
-      b.driver?.name ||
-      ""
-    )
-      .toLowerCase()
-      .includes(filters.driver.toLowerCase())
+      const driverMatch = (
+        b.driver?.name ||
+        ""
+      )
+        .toLowerCase()
+        .includes(filters.driver.toLowerCase())
 
-    let dateMatch = true
+      let dateMatch = true
 
-    if (filters.startDate && filters.endDate) {
-      const bookingDate = new Date(b.created_at)
+      if (filters.startDate && filters.endDate) {
+        const bookingDate = new Date(b.created_at)
 
-      const start = new Date(filters.startDate)
-      const end = new Date(filters.endDate)
+        const start = new Date(filters.startDate)
+        const end = new Date(filters.endDate)
 
-      end.setHours(23, 59, 59, 999)
+        end.setHours(23, 59, 59, 999)
 
-      dateMatch =
-        bookingDate >= start &&
-        bookingDate <= end
-    }
+        dateMatch =
+          bookingDate >= start &&
+          bookingDate <= end
+      }
 
-    return (
-      patientMatch &&
-      mobileMatch &&
-      driverMatch &&
-      dateMatch
-    )
-  })
-}, [bookings, filters])
+      return (
+        patientMatch &&
+        mobileMatch &&
+        driverMatch &&
+        dateMatch
+      )
+    })
+  }, [bookings, filters])
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -342,9 +342,9 @@ const filteredBookings = useMemo(() => {
               <!-- Header Section -->
               <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
                 ${logoBase64
-                  ? `<img src="${logoBase64}" style="width:180px; height:180px; border-radius:50%; object-fit:cover;" />`
-                  : `<div style="width:180px; height:180px; border-radius:50%; background:#f0f0f0;"></div>`
-                }
+          ? `<img src="${logoBase64}" style="width:180px; height:180px; border-radius:50%; object-fit:cover;" />`
+          : `<div style="width:180px; height:180px; border-radius:50%; background:#f0f0f0;"></div>`
+        }
                 <div style="text-align:center;flex:1;color:#000000;">
                   <h2 style="color:#008000;font-size:30px;margin:0;">FREE</h2>
                   <h2 style="color:#FF0000;font-size:30px;margin:0;">AMBULANCE</h2>
@@ -353,9 +353,9 @@ const filteredBookings = useMemo(() => {
                   <h3 style="margin:0px;padding:0px;">📞 9776696669,9348616669,9006706355</h3>
                 </div>
                 ${photoBase64
-                  ? `<img src="${photoBase64}" style="width:220px; height:220px; border-radius:20px; object-fit:cover;padding-right:10px;" />`
-                  : `<div style="width:220px; height:220px; border-radius:20px; background:#f0f0f0;"></div>`
-                }
+          ? `<img src="${photoBase64}" style="width:220px; height:220px; border-radius:20px; object-fit:cover;padding-right:10px;" />`
+          : `<div style="width:220px; height:220px; border-radius:20px; background:#f0f0f0;"></div>`
+        }
               </div>
              
               <!-- Details Section -->
@@ -364,11 +364,27 @@ const filteredBookings = useMemo(() => {
                   <div style="flex:2;">
                     <p><strong>Date:</strong> ${b.created_at ? new Date(b.created_at).toLocaleDateString() : "N/A"}</p>
                     <p><strong>Service ID:</strong> ${b.id}</p>
-                    <p><strong>Patient Name:</strong> ${b.patient_name || "N/A"}</p>
-                    <p><strong>Contact Number:</strong> ${b.patient_contact || b.booker_phone || "N/A"}</p>
+                    <p><strong>Patient Name:</strong> <span style="
+  font-size:18px;
+  font-weight:900;
+ color:#000000;
+  text-transform:uppercase;
+">
+  ${b.patient_name || "N/A"}
+</span></p>
+                    <p style="margin:0; font-size:14px; color:#333333;">
+                      <strong>Contact Number:</strong> ${b.patient_contact || b.booker_phone || "N/A"}
+                    </p>
                     <p><strong>Pickup Location:</strong> ${b.pickup_address || "N/A"}</p>
                     <p><strong>Drop Location:</strong> ${b.drop_address || "N/A"}</p>
-                    <p><strong>Driver Name:</strong> ${b.driver?.name || "N/A"}</p>
+                    <p><strong>Driver Name:</strong> <span style="
+  font-size:18px;
+  font-weight:900;
+ color:#000000;
+  text-transform:uppercase;
+">
+  ${b.driver?.name || "N/A"}
+</span></p>
                     <p><strong>Vehicle Number:</strong> ${b.driver?.vehicle_number || "N/A"}</p>
                     <p><strong>Ambulance Type:</strong> ${b.ambulance_type || "N/A"}</p>
                   </div>
@@ -378,16 +394,16 @@ const filteredBookings = useMemo(() => {
                     <div style="text-align:center;">
                       <p style="margin:0 0 5px 0; font-size:13px; font-weight:bold;">Pickup</p>
                       ${pickupBase64
-                        ? `<img src="${pickupBase64}" style="width:200px; height:170px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />`
-                        : `<div style="width:200px; height:170px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px; color:#888; font-size:12px;">No Photo</div>`
-                      }
+            ? `<img src="${pickupBase64}" style="width:200px; height:170px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />`
+            : `<div style="width:200px; height:170px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px; color:#888; font-size:12px;">No Photo</div>`
+          }
                     </div>
                     <div style="text-align:center;">
                       <p style="margin:0 0 5px 0; font-size:13px; font-weight:bold;">Drop</p>
                       ${dropBase64
-                        ? `<img src="${dropBase64}" style="width:200px; height:170px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />`
-                        : `<div style="width:200px; height:170px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px; color:#888; font-size:12px;">No Photo</div>`
-                      }
+            ? `<img src="${dropBase64}" style="width:200px; height:170px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />`
+            : `<div style="width:200px; height:170px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px; color:#888; font-size:12px;">No Photo</div>`
+          }
                     </div>
                   </div>
                   ` : ''}
@@ -405,9 +421,9 @@ const filteredBookings = useMemo(() => {
               <div style="margin-top:40px; display:flex; justify-content:flex-end; padding:0 40px;">
                <div style="text-align:center; width:45%;">
                   ${signatureBase64
-                    ? `<img src="${signatureBase64}" style="width:160px; height:70px; object-fit:contain; margin-bottom:-10px;" />`
-                    : `<div style="width:160px; height:70px;"></div>`
-                  }
+          ? `<img src="${signatureBase64}" style="width:160px; height:70px; object-fit:contain; margin-bottom:-10px;" />`
+          : `<div style="width:160px; height:70px;"></div>`
+        }
                   <div style="border-bottom:2px solid #000; width:100%; margin-bottom:8px;"></div>
                   <p style="margin:0; font-weight:bold; font-size:16px;">Founder Signature</p>
                   <p style="margin:4px 0 0 0; color:#555; font-size:13px;">Nagendra Nath</p>
@@ -417,9 +433,9 @@ const filteredBookings = useMemo(() => {
               <!-- Footer Photo -->
               <div style="margin-top:30px; border-radius:15px; overflow:hidden; border:2px solid #008000; position:relative;">
                 ${footerBase64
-                  ? `<img src="${footerBase64}" style="width:100%; height:120px; object-fit:cover; display:block;" />`
-                  : `<div style="width:100%; height:120px; background:#f0f0f0;"></div>`
-                }
+          ? `<img src="${footerBase64}" style="width:100%; height:120px; object-fit:cover; display:block;" />`
+          : `<div style="width:100%; height:120px; background:#f0f0f0;"></div>`
+        }
                 <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,128,0,0.9)); padding:6px; text-align:center; color:#ffffff;">
                   <p style="margin:0; font-size:16px; font-weight:bold; letter-spacing:1px;">FOR EMERGENCY &amp; FREE AMBULANCE SERVICE</p>
                   <p style="margin:3px 0 0 0;font-weight:bold; font-size:15px; opacity:0.9;">Available 24/7 • Completely Free • Serving the Community</p>
@@ -447,7 +463,7 @@ const filteredBookings = useMemo(() => {
               if (img.complete && img.naturalHeight > 0) resolve()
               else {
                 img.onload = resolve
-                img.onerror = resolve 
+                img.onerror = resolve
               }
             })
         )
@@ -460,7 +476,7 @@ const filteredBookings = useMemo(() => {
       const canvas = await html2canvas(elementToCapture, {
         scale: 2,
         useCORS: true,
-        allowTaint: true, 
+        allowTaint: true,
         backgroundColor: "#ffffff",
         logging: false,
       })
@@ -496,7 +512,7 @@ const filteredBookings = useMemo(() => {
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        
+
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-xl shadow-sm border border-slate-100">
           <div>
@@ -524,11 +540,10 @@ const filteredBookings = useMemo(() => {
             <button
               key={tab.value}
               onClick={() => setReportType(tab.value)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                reportType === tab.value
-                  ? "bg-white text-blue-700 shadow-sm"
-                  : "text-slate-600 hover:text-slate-800 hover:bg-slate-200"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${reportType === tab.value
+                ? "bg-white text-blue-700 shadow-sm"
+                : "text-slate-600 hover:text-slate-800 hover:bg-slate-200"
+                }`}
             >
               <tab.icon className="h-4 w-4" /> {tab.label}
             </button>

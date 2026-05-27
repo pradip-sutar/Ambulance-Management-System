@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { Header } from "../components/header"
 import {
@@ -50,6 +50,9 @@ const services = [
 ]
 
 export default function ServicesPage() {
+      useEffect(() => {
+        window.scrollTo(0, 0)
+    }, [])
     return (
         <div className="flex flex-col">
             <Header />
@@ -59,26 +62,37 @@ export default function ServicesPage() {
             <section className="relative w-full overflow-hidden min-h-[50vh] sm:min-h-[60vh] flex items-center py-12 sm:py-16 md:py-20">
                 <div
                     className="absolute inset-0 bg-cover bg-center z-0"
-                    style={{ backgroundImage: "url('/hero-ambulance2.png')" }}
+                    style={{ backgroundImage: "url('/service-hero.jpeg')" }}
                 />
-                <div className="absolute inset-0 bg-black/40 z-10" />
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-900/85 to-blue-800/60 z-10" />
+                {/* <div className="absolute inset-0 bg-black/40 z-10" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-900/85 to-blue-800/60 z-10" /> */}
 
                 <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="max-w-3xl">
                         <Badge variant="secondary" className="mb-4 sm:mb-6 border border-white/20 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 text-white/90 backdrop-blur-md text-md sm:text-sm">
                             <Siren className="mr-1.5 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-cyan-400" /> Our Services
+
+                           
                         </Badge>
 
-                        <h1 className="mb-4 sm:mb-6 text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight text-white">
-                            Comprehensive & Free{" "}
-                            <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                                Medical Transport
-                            </span>{" "}
-                            Services
-                        </h1>
+                         <h1 className="mb-4 sm:mb-6 text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight text-white">
+                                Comprehensive  &
 
-                        <p className="mb-6 sm:mb-8 max-w-2xl text-sm sm:text-base md:text-lg leading-relaxed text-white/80">
+                            </h1>
+
+
+
+                        <h1 className="mb-4 display:grid sm:mb-6 text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight text-white">
+       Free{" "}  Medical 
+                          
+                           
+                        </h1>
+                        <h1 className="mb-4 display:grid sm:mb-6 text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight text-white">
+
+                            Transport Services
+                            
+                        </h1>
+                        <p className="mb-6 sm:mb-8 max-w-xl text-sm sm:text-base md:text-lg leading-relaxed text-white/80">
                             From critical emergencies to non-emergency transports, we provide a wide range of ambulance services completely free of cost. No one should suffer due to lack of transport.
                         </p>
 
@@ -238,7 +252,7 @@ export default function ServicesPage() {
 
                 </div>
             </section>
-            
+
             {/* ========================================= */}
             {/* CTA SECTION                               */}
             {/* ========================================= */}

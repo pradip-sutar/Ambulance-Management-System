@@ -10,9 +10,9 @@ export function Hero() {
 
       {/* Background Image */}
       <div
-        className="absolute inset-0 bg-cover bg-[70%_center] md:bg-center z-0"
+        className="absolute inset-0 bg-cover bg-[60%_center] md:bg-center z-0"
         style={{
-          backgroundImage: "url('/hero-ambulance2.png')",
+          backgroundImage: "url('/hero-ambulance2.jpeg')",
         }}
       />
 
@@ -20,7 +20,7 @@ export function Hero() {
       <div className="absolute inset-0 bg-black/20 z-10" />
 
       {/* Blue Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-900/80 to-transparent z-10" />
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95  to-transparent z-10" />
 
       <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
@@ -35,7 +35,7 @@ export function Hero() {
           </Badge>
 
           {/* Heading */}
-          <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
+          <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl lg:text-6xl">
             Book an <br className="hidden sm:block" />
             ambulance in{" "}
             <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
@@ -44,7 +44,7 @@ export function Hero() {
           </h1>
 
           {/* Description */}
-          <p className="mb-8 max-w-2xl text-base leading-relaxed text-white/80 sm:text-lg md:text-xl">
+          <p className="mb-8 max-w-xl text-base leading-relaxed text-white/80 sm:text-lg md:text-xl">
             Fast, reliable emergency medical transport when every second counts.
             Our ambulances is ready to respond 24/7.
           </p>
@@ -67,11 +67,7 @@ export function Hero() {
               label="Emergency service"
             />
 
-            <StatIndicator
-              icon={<Users className="h-4 w-4 sm:h-6 sm:w-6" />}
-              value="100%"
-              label="Trained crew"
-            />
+            
           </div>
         </div>
       </div>

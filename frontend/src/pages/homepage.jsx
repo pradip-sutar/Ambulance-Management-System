@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Toaster } from "sonner"
 import { Header } from "../components/header"
 import { Hero } from "../components/hero"
@@ -9,7 +9,25 @@ import { RecentBookings } from "../components/recent-bookings"
 import { Footer } from "../components/footer"
 
 export default function Home() {
+   useEffect(() => {
+  if (window.location.hash === "#booking-form") {
+    const element = document.getElementById("booking-form")
+
+    if (element) {
+      setTimeout(() => {
+        element.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        })
+      }, 100)
+    }
+  } else {
+    window.scrollTo(0, 0)
+  }
+}, [])
+
   const [bookings, setBookings] = useState([])
+  
 
   const handleNewBooking = (booking) => {
     setBookings((prev) => [booking, ...prev])

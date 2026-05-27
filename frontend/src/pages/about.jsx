@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+
 import { Link } from "react-router-dom"
 import { Header } from "../components/header"
 import { Heart, Shield, Clock, Truck, Phone, Star, ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react" // Added ChevronLeft, ChevronRight
@@ -24,15 +25,27 @@ const galleryImages = [
 ]
 
 export default function AboutPage() {
+   useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(true)
-  const [lightboxIndex, setLightboxIndex] = useState(null) // Now stores the index instead of the image URL
+  const [lightboxIndex, setLightboxIndex] = useState(null)
+
 
   // Number of images visible at once
   const visibleCount = 4 
 
+
   // Clone first 'visibleCount' images to the end for infinite loop effect
   const clonedImages = [...galleryImages, ...galleryImages.slice(0, visibleCount)]
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
+  
 
   // Auto-slide logic
   useEffect(() => {
@@ -71,10 +84,10 @@ export default function AboutPage() {
       <section className="relative w-full overflow-hidden min-h-[60vh] sm:min-h-[70vh] flex items-center py-12 sm:py-16 md:py-20">
         <div
           className="absolute inset-0 bg-cover bg-center z-0"
-          style={{ backgroundImage: "url('/hero-ambulance2.png')" }}
+          style={{ backgroundImage: "url('/about-hero.jpeg')" }}
         />
-        <div className="absolute inset-0 bg-black/30 z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-900/85 to-blue-800/60 z-10" />
+        {/* <div className="absolute inset-0 bg-black/30 z-10" /> */}
+        {/* <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-900/85 to-blue-800/60 z-10" /> */}
 
         <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
@@ -82,7 +95,7 @@ export default function AboutPage() {
               <Heart className="mr-1.5 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-red-400 fill-red-400" /> Non-Profit Initiative
             </Badge>
             
-            <h1 className="mb-4 sm:mb-6 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight text-white">
+            <h1 className="mb-4 sm:mb-6 text-2xl sm:text-2xl md:text-3xl lg:text-3xl font-extrabold leading-tight tracking-tight text-white">
                "Mo Ambulance Seba Service” is not just a service  <br className="hidden md:block" />
               <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
                 — it is a mission of humanity, care, and
