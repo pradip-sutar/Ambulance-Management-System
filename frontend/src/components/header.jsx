@@ -73,7 +73,7 @@ export function Header() {
 
               <a
                 href="tel:9776696669"
-                className="flex items-center gap-1 rounded-full bg-red-600 px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white"
+                className="flex items-center gap-1 rounded-full bg-red-600 px-1 py-1.5 text-[11px] sm:text-xs font-semibold text-white"
               >
                 <Phone className="h-3 w-3" />
                 9776696669
@@ -81,7 +81,7 @@ export function Header() {
 
               <a
                 href="tel:9348616669"
-                className="flex items-center gap-1 rounded-full bg-red-600 px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white"
+                className="flex items-center gap-1 rounded-full bg-red-600 px-1 py-1.5 text-[11px] sm:text-xs font-semibold text-white"
               >
                 <Phone className="h-3 w-3" />
                 9348616669
@@ -93,7 +93,7 @@ export function Header() {
                   className="flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white"
                 >
                   <LogIn className="h-3 w-3" />
-                  Login
+                  
                 </button>
               ) : (
                 <button

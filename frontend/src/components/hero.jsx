@@ -9,12 +9,22 @@ export function Hero() {
     <section className="relative w-full overflow-hidden min-h-[85vh] flex items-center py-12 md:py-20 lg:py-0">
 
       {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-[60%_center] md:bg-center z-0"
-        style={{
-          backgroundImage: "url('/hero-ambulance2.jpeg')",
-        }}
-      />
+      {/* Desktop Background Image */}
+<div
+  className="absolute inset-0 hidden sm:block bg-cover bg-left-center md:bg-center z-0"
+  style={{
+    backgroundImage: "url('/hero-ambulance2.jpeg')",
+  }}
+/>
+
+{/* Mobile Ambulance PNG */}
+<div className="absolute inset-0 flex items-center justify-center sm:hidden z-0 -mt-100">
+  <img
+    src="/ambulance3.jpeg"
+    alt="Ambulance"
+    className="w-full max-w-[320px] object-contain"
+  />
+</div>
 
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/20 z-10" />
@@ -50,10 +60,6 @@ export function Hero() {
           </p>
 
           {/* Stats Container */}
-          {/* 
-             Mobile: flex-row (Side-by-side, compact)
-             sm+: grid-cols-3 (Standard cards)
-          */}
           <div className="flex flex-1 flex-row gap-2 sm:grid sm:grid-cols-3 sm:gap-6">
             <StatIndicator
               icon={<Clock className="h-4 w-4 sm:h-6 sm:w-6" />}

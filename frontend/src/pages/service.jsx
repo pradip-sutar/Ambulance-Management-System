@@ -59,15 +59,24 @@ export default function ServicesPage() {
             {/* ========================================= */}
             {/* HERO SECTION                              */}
             {/* ========================================= */}
-            <section className="relative w-full overflow-hidden min-h-[50vh] sm:min-h-[60vh] flex items-center py-12 sm:py-16 md:py-20">
-                <div
-                    className="absolute inset-0 bg-cover bg-center z-0"
-                    style={{ backgroundImage: "url('/service-hero.jpeg')" }}
-                />
-                {/* <div className="absolute inset-0 bg-black/40 z-10" />
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-900/85 to-blue-800/60 z-10" /> */}
+            <section className="relative w-full overflow-hidden min-h-[50vh] sm:min-h-[60vh] flex items-center py-12 sm:py-16 md:py-20 bg-blue-600 sm:bg-transparent">
+              <div
+  className="absolute inset-0 hidden sm:block bg-cover bg-left-center md:bg-center z-0"
+  style={{
+    backgroundImage: "url('/hero-ambulance2.jpeg')",
+  }}
+/>
 
-                <div className="container relative z-20 mx-auto px-4 sm:px-6 lg:px-8">
+{/* Mobile Ambulance PNG */}
+<div className="absolute inset-0 flex items-center justify-center sm:hidden z-0 -translate-y-55">
+  <img
+    src="/ambulance_logo.png"
+    alt="Ambulance"
+    className="w-full max-w-[100px] object-contain"
+  />
+</div>
+
+                <div className="container relative z-20 mx-auto px-4 sm:px-8 lg:px-8 mt-[100px] sm:mt-0">
                     <div className="max-w-3xl">
                         <Badge variant="secondary" className="mb-4 sm:mb-6 border border-white/20 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 text-white/90 backdrop-blur-md text-md sm:text-sm">
                             <Siren className="mr-1.5 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-cyan-400" /> Our Services
