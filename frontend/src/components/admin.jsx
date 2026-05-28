@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+// add to your existing lucide imports
 import {
   Dialog,
   DialogContent,
@@ -9,7 +10,7 @@ import {
 import {
   Eye, EyeOff, Users, Ambulance, MapPin,
   ClipboardList, UserCheck, Truck, Plus, FileText,
-  Heart, User as UserIcon,
+  Heart, User as UserIcon, Image,
 } from "lucide-react"
 import {
   Card, CardContent, CardHeader, CardTitle
@@ -226,6 +227,11 @@ export default function AdminDashboard() {
     )
   }
 
+  // ✅ FILTER: Hide bookings that are completed AND have patient details filled
+  const visibleBookings = bookings.filter(
+    (b) => !(b.status === "completed" && b.patient_name)
+  )
+
   return (
     <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -241,9 +247,20 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-sm text-slate-500 mt-1 ml-10">Manage bookings, drivers, and assignments</p>
           </div>
-          <Button onClick={() => navigate("/admin-report")} className="bg-blue-600 hover:bg-blue-700 shadow-sm">
-            <FileText className="h-4 w-4 mr-2" /> View Reports
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => navigate("/admin-gallery")}
+              className="bg-purple-600 hover:bg-purple-700 shadow-sm"
+            >
+              <Image className="h-4 w-4 mr-2" /> Gallery
+            </Button>
+            <Button
+              onClick={() => navigate("/admin-report")}
+              className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+            >
+              <FileText className="h-4 w-4 mr-2" /> View Reports
+            </Button>
+          </div>
         </div>
 
         {/* STATS */}
@@ -409,14 +426,14 @@ export default function AdminDashboard() {
             <ClipboardList className="h-5 w-5 text-blue-600" /> Recent Bookings
           </h2>
 
-          {bookings.length === 0 ? (
+          {visibleBookings.length === 0 ? (
             <Card className="border-slate-100 shadow-sm">
               <CardContent className="p-8 text-center text-slate-500">
                 No bookings available.
               </CardContent>
             </Card>
           ) : (
-            bookings.map((b) => (
+            visibleBookings.map((b) => (
               <Card key={b.id} className={`border-l-4 ${b.status === 'pending' ? 'border-l-amber-500' : 'border-l-blue-500'} bg-white shadow-sm hover:shadow-md transition-shadow`}>
                 <CardContent className="p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">

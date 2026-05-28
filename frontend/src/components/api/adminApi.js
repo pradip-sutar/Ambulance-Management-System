@@ -82,3 +82,35 @@ export const assignDriver = async (driver_id, booking_id) => {
     throw error.response?.data || { message: "Failed to assign driver" }
   }
 }
+
+export const updateBooking = async (id, data) => {
+  try {
+    const res = await API.put(`/bookings/${id}`, data); // ✅ Using the Axios instance
+    return res.data;
+  } catch (error) {
+    console.error("Update Booking Error:", error.response?.data || error.message);
+    throw error.response?.data || { message: "Failed to update booking" };
+  }
+};
+
+// =========================
+// 📸 UPLOAD DROP PROOF
+// =========================
+
+export const uploadDropProofAdmin = async (bookingId, file) => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    // Use the existing driver endpoint for uploading drop proof
+    const res = await API.post(`/drivers/bookings/${bookingId}/drop-proof`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Upload Drop Proof Error:", error.response?.data || error.message);
+    throw error.response?.data || { message: "Failed to upload drop proof" };
+  }
+};

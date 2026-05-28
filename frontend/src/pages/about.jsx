@@ -2,36 +2,71 @@ import { useState, useEffect } from "react"
 
 import { Link } from "react-router-dom"
 import { Header } from "../components/header"
-import { Heart, Shield, Clock, Truck, Phone, Star, ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react" // Added ChevronLeft, ChevronRight
+import {
+  Heart,
+  Shield,
+  User as UserIcon,
+  Clock,
+  Truck,
+  Phone,
+  Star,
+  ArrowRight,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
+  
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 import { Footer } from "../components/footer"
 
 // Add your 10+ images here
-const galleryImages = [
-  "/slider-1.jpeg",
-  "/slider-2.jpeg",
-  "/slider-3.jpeg",
-  "/slider-4.jpeg",
-  "/slider-5.jpeg",
-  "/slider-6.jpeg",
-  "/slider-7.jpeg",
-  "/slider-8.jpeg",
-  "/slider-9.jpeg",
-  "/slider-10.jpeg",
-  "/slider-11.jpeg",
-  "/slider-12.jpeg",
-  "/slider-13.jpeg",
-]
+
+import { getGalleryImages } from "../components/api/galleryapi"
+// const galleryImages = [
+//   "/slider-1.jpeg",
+//   "/slider-2.jpeg",
+//   "/slider-3.jpeg",
+//   "/slider-4.jpeg",
+//   "/slider-5.jpeg",
+//   "/slider-6.jpeg",
+//   "/slider-7.jpeg",
+//   "/slider-8.jpeg",
+//   "/slider-9.jpeg",
+//   "/slider-10.jpeg",
+//   "/slider-11.jpeg",
+//   "/slider-12.jpeg",
+//   "/slider-13.jpeg",
+// ]
 
 export default function AboutPage() {
    useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [])
+  window.scrollTo(0, 0)
 
+  loadGallery()
+}, [])
+
+const loadGallery = async () => {
+  try {
+    const data = await getGalleryImages()
+    const base = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
+    setGalleryImages(
+      data.map((img) => {
+        const url = img.image_url
+        // If already a full URL, use as-is
+        if (url.startsWith("http")) return url
+        // Otherwise prepend the backend base URL
+        return `${base}${url}`
+      })
+    )
+  } catch (error) {
+    console.log(error)
+  }
+}
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(true)
   const [lightboxIndex, setLightboxIndex] = useState(null)
+  const [galleryImages, setGalleryImages] = useState([])
 
 
   // Number of images visible at once
@@ -84,7 +119,7 @@ export default function AboutPage() {
       <section className="relative w-full overflow-hidden min-h-[60vh] sm:min-h-[70vh] flex items-center py-12 sm:py-16 md:py-20">
         <div
           className="absolute inset-0 bg-cover bg-center z-0"
-          style={{ backgroundImage: "url('/about-hero.jpeg')" }}
+          style={{ backgroundImage: "url('/hero-ambulance2.jpeg')" }}
         />
         {/* <div className="absolute inset-0 bg-black/30 z-10" /> */}
         {/* <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-900/85 to-blue-800/60 z-10" /> */}
@@ -95,7 +130,7 @@ export default function AboutPage() {
               <Heart className="mr-1.5 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-red-400 fill-red-400" /> Non-Profit Initiative
             </Badge>
             
-            <h1 className="mb-4 sm:mb-6 text-2xl sm:text-2xl md:text-3xl lg:text-3xl font-extrabold leading-tight tracking-tight text-white">
+            <h1 className="mb-4 sm:mb-6 text-2xl sm:text-2xl md:text-3xl lg:text-2xl font-extrabold leading-tight tracking-tight text-white">
                "Mo Ambulance Seba Service” is not just a service  <br className="hidden md:block" />
               <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
                 — it is a mission of humanity, care, and

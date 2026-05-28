@@ -14,6 +14,7 @@ from driver.router import router as driver_router
 from admin.router import router as admin_router
 from user.router import router as user_router
 from auth.router import router as auth_router
+from gallery.router import router as gallery_router
 
 # ================= MODELS =================
 from bookingform.model import Booking
@@ -73,6 +74,7 @@ app.include_router(user_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(driver_router, prefix="/api")
 app.include_router(booking_router, prefix="/api")
+app.include_router(gallery_router, prefix="/api")  # ✅ Added /api prefix
 
 # ================= SERVE REACT =================
 @app.get("/{full_path:path}")

@@ -7,6 +7,7 @@ from bookingform.schema import (
     BookingCreate,
     BookingResponse,
     PatientDetailUpdate,
+    BookingUpdate, # <-- Fixed!
 )
 
 from bookingform.service import create_booking
@@ -43,6 +44,31 @@ def get_bookings(
 
 
 # ================= USER BOOKINGS =================
+
+#
+
+# ================= UPDATE FULL BOOKING (ADMIN) =================
+# ✅ Place this route ABOVE /my-bookings/{phone}
+@router.put("/{booking_id}")
+def update_booking(
+    booking_id: int,
+    data: BookingUpdate,
+    db: Session = Depends(get_db)
+):
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    update_data = data.dict(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(booking, field, value)
+
+    db.commit()
+    db.refresh(booking)
+
+    return {"message": "Booking updated successfully", "data": booking}
 
 @router.get(
     "/my-bookings/{phone}",

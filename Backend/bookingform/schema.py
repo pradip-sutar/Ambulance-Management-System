@@ -67,7 +67,21 @@ class DriverResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
+class BookingUpdate(BaseModel):
+    patient_name: Optional[str] = None
+    patient_age: Optional[int] = None
+    patient_gender: Optional[str] = None
+    patient_contact: Optional[str] = None
+    patient_aadhar: Optional[str] = None
+    patient_village: Optional[str] = None
+    patient_police_station: Optional[str] = None
+    patient_district: Optional[str] = None
+    patient_pincode: Optional[str] = None
+    pickup_address: Optional[str] = None
+    drop_address: Optional[str] = None
+    medical_condition: Optional[str] = None
+    ambulance_type: Optional[str] = None
+    status: Optional[str] = None
 # =========================================================
 # BOOKING RESPONSE — returned to frontend
 # All patient/caretaker fields are Optional because
@@ -128,3 +142,6 @@ class BookingResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+

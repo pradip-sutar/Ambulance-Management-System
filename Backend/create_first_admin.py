@@ -8,7 +8,7 @@ def create_first_admin():
     db = SessionLocal()
 
     phone = "9776696669"
-    password_plain = "nagen@96"
+    password_plain = "nagen@5"
 
     try:
         existing = db.query(Admin).filter(Admin.phone == phone).first()

@@ -14,8 +14,6 @@ import {
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "../components/ui/card"
 
 import { Input } from "../components/ui/input"
@@ -32,12 +30,12 @@ import {
 
 import { Button } from "../components/ui/button"
 
-import { getBookings } from "../components/api/adminApi"
+import { getBookings, updateBooking, uploadDropProofAdmin } from "../components/api/adminApi"
 
 import { toast } from "sonner"
 import {
   ArrowLeft, FileDown, Filter, FileText,
-  UserRound, HeartPulse, Ambulance, ClipboardList, ImageOff
+  UserRound, HeartPulse, Ambulance, ClipboardList, ImageOff, Pencil, Camera
 } from "lucide-react"
 
 export default function ReportPage() {
@@ -48,6 +46,10 @@ export default function ReportPage() {
   const [generatingCertId, setGeneratingCertId] = useState(null)
   const [reportType, setReportType] = useState("ambulance")
   const [selectedImage, setSelectedImage] = useState(null)
+  
+  const [editingBooking, setEditingBooking] = useState(null)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editDropFile, setEditDropFile] = useState(null)
 
   const ambulanceLogo = "/ambulance_logo.png"
   const ambulancePhoto = "/ambulance.jpeg"
@@ -63,7 +65,6 @@ export default function ReportPage() {
     endDate: "",
   })
 
-  // ✅ HELPER: Fixes double-slash issue in image URLs
   const getImageUrl = (path) => {
     if (!path) return null;
     if (path.startsWith("http")) return path;
@@ -71,8 +72,6 @@ export default function ReportPage() {
     return `${API_BASE_URL}/${cleanPath}`;
   };
 
-  // ✅✅✅ NEW HELPER: Convert image URL to base64 data URL
-  // This solves html2canvas CORS issues — base64 images don't need CORS
   const toBase64 = async (url) => {
     if (!url) return null;
     try {
@@ -86,7 +85,6 @@ export default function ReportPage() {
         reader.readAsDataURL(blob);
       });
     } catch {
-      // Retry without cors mode (for same-origin resources)
       try {
         const res = await fetch(url);
         if (!res.ok) return null;
@@ -142,53 +140,55 @@ export default function ReportPage() {
     }
   }
 
-  const filteredBookings = useMemo(() => {
-    return bookings.filter((b) => {
+  const handleSaveEdit = async () => {
+    if (!editingBooking) return;
+    setSavingEdit(true);
+    try {
+      await updateBooking(editingBooking.id, editingBooking);
 
-      const patientMatch = (
-        b.patient_name ||
-        b.booker_name ||
-        ""
-      )
-        .toLowerCase()
-        .includes(filters.patient.toLowerCase())
-
-      const mobileMatch = (
-        b.patient_contact ||
-        b.booker_phone ||
-        ""
-      ).includes(filters.mobile)
-
-      const driverMatch = (
-        b.driver?.name ||
-        ""
-      )
-        .toLowerCase()
-        .includes(filters.driver.toLowerCase())
-
-      let dateMatch = true
-
-      if (filters.startDate && filters.endDate) {
-        const bookingDate = new Date(b.created_at)
-
-        const start = new Date(filters.startDate)
-        const end = new Date(filters.endDate)
-
-        end.setHours(23, 59, 59, 999)
-
-        dateMatch =
-          bookingDate >= start &&
-          bookingDate <= end
+      if (editDropFile) {
+        await uploadDropProofAdmin(editingBooking.id, editDropFile);
       }
 
-      return (
-        patientMatch &&
-        mobileMatch &&
-        driverMatch &&
-        dateMatch
-      )
+      toast.success("Booking updated successfully");
+      setEditingBooking(null);
+      setEditDropFile(null);
+      fetchReports();
+    } catch (err) {
+      toast.error("Failed to update booking");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleEditChange = (field, value) => {
+    setEditingBooking(prev => ({ ...prev, [field]: value }));
+  };
+
+  const openEditDialog = (booking) => {
+    setEditingBooking(booking);
+    setEditDropFile(null);
+  }
+
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((b) => {
+      const patientMatch = (b.patient_name || b.booker_name || "").toLowerCase().includes(filters.patient.toLowerCase())
+      const mobileMatch = (b.patient_contact || b.booker_phone || "").includes(filters.mobile)
+      const driverMatch = (b.driver?.name || "").toLowerCase().includes(filters.driver.toLowerCase())
+
+      let dateMatch = true
+      if (filters.startDate && filters.endDate) {
+        const bookingDate = new Date(b.created_at)
+        const start = new Date(filters.startDate)
+        const end = new Date(filters.endDate)
+        end.setHours(23, 59, 59, 999)
+        dateMatch = bookingDate >= start && bookingDate <= end
+      }
+
+      return patientMatch && mobileMatch && driverMatch && dateMatch
     })
   }, [bookings, filters])
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -202,7 +202,6 @@ export default function ReportPage() {
 
   const exportToExcel = () => {
     if (!filteredBookings.length) return
-
     let data = []
 
     if (reportType === "ambulance") {
@@ -286,21 +285,11 @@ export default function ReportPage() {
     let iframe = null
 
     try {
-      // ✅✅✅ CONVERT ALL IMAGES TO BASE64 FIRST
-      // This is the key fix — base64 images have no CORS issues with html2canvas
-      const [
-        logoBase64,
-        photoBase64,
-        signatureBase64,
-        footerBase64,
-        pickupBase64,
-        dropBase64,
-      ] = await Promise.all([
+      const [logoBase64, photoBase64, signatureBase64, footerBase64, dropBase64] = await Promise.all([
         toBase64(ambulanceLogo),
         toBase64(ambulancePhoto),
         toBase64("/signature.png"),
         toBase64(footerPhoto),
-        toBase64(getImageUrl(b.pickup_proof_url)),
         toBase64(getImageUrl(b.drop_proof_url)),
       ])
 
@@ -341,21 +330,15 @@ export default function ReportPage() {
 
               <!-- Header Section -->
               <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                ${logoBase64
-          ? `<img src="${logoBase64}" style="width:180px; height:180px; border-radius:50%; object-fit:cover;" />`
-          : `<div style="width:180px; height:180px; border-radius:50%; background:#f0f0f0;"></div>`
-        }
+                ${logoBase64 ? `<img src="${logoBase64}" style="width:180px; height:180px; border-radius:50%; object-fit:cover;" />` : `<div style="width:180px; height:180px; border-radius:50%; background:#f0f0f0;"></div>`}
                 <div style="text-align:center;flex:1;color:#000000;">
                   <h2 style="color:#008000;font-size:30px;margin:0;">FREE</h2>
                   <h2 style="color:#FF0000;font-size:30px;margin:0;">AMBULANCE</h2>
                   <h2 style="color:#008000;margin-top:10px;">SERVICE CERTIFICATE</h2>
-                  <h3 style="margin:0px;padding:0px;">Dharmadaspur,Mahanga,Cuttack,Pin:754204</h3>
-                  <h3 style="margin:0px;padding:0px;">📞 9776696669,9348616669,9006706355</h3>
+                  <h3 style="margin:0px;padding:0px;">Dharmadaspur, Mahanga, Cuttack, Pin:754204</h3>
+                  <h3 style="margin:5px;padding:5px;">📞 9776696669, 9348616669, 9006706355</h3>
                 </div>
-                ${photoBase64
-          ? `<img src="${photoBase64}" style="width:220px; height:220px; border-radius:20px; object-fit:cover;padding-right:10px;" />`
-          : `<div style="width:220px; height:220px; border-radius:20px; background:#f0f0f0;"></div>`
-        }
+                ${photoBase64 ? `<img src="${photoBase64}" style="width:220px; height:220px; border-radius:20px; object-fit:cover;padding-right:10px;" />` : `<div style="width:220px; height:220px; border-radius:20px; background:#f0f0f0;"></div>`}
               </div>
              
               <!-- Details Section -->
@@ -364,46 +347,23 @@ export default function ReportPage() {
                   <div style="flex:2;">
                     <p><strong>Date:</strong> ${b.created_at ? new Date(b.created_at).toLocaleDateString() : "N/A"}</p>
                     <p><strong>Service ID:</strong> ${b.id}</p>
-                    <p><strong>Patient Name:</strong> <span style="
-  font-size:18px;
-  font-weight:900;
- color:#000000;
-  text-transform:uppercase;
-">
-  ${b.patient_name || "N/A"}
-</span></p>
-                    <p style="margin:0; font-size:14px; color:#333333;">
-                      <strong>Contact Number:</strong> ${b.patient_contact || b.booker_phone || "N/A"}
-                    </p>
-                    <p><strong>Pickup Location:</strong> ${b.pickup_address || "N/A"}</p>
+                    <p><strong>Patient Name:</strong> <span style="font-size:18px; font-weight:900; color:#000000; text-transform:uppercase;">${b.patient_name || "N/A"}</span></p>
+                    <p style="margin:0; font-size:14px; color:#333333;"><strong>Contact Number:</strong> ${b.patient_contact || b.booker_phone || "N/A"}</p>
+                    <p><strong>Village:</strong> ${b.patient_village || "N/A"}</p>
+                    <p><strong>Police Station:</strong> ${b.patient_police_station || "N/A"}</p>
+                    <p><strong>District:</strong> ${ b.patient_district || "N/A"}</p>
+                    <p><strong>Pincode:</strong> ${b.patient_pincode || "N/A"}</p>
                     <p><strong>Drop Location:</strong> ${b.drop_address || "N/A"}</p>
-                    <p><strong>Driver Name:</strong> <span style="
-  font-size:18px;
-  font-weight:900;
- color:#000000;
-  text-transform:uppercase;
-">
-  ${b.driver?.name || "N/A"}
-</span></p>
+                    <p><strong>Driver Name:</strong> <span style="font-size:18px; font-weight:900; color:#000000; text-transform:uppercase;">${b.driver?.name || "N/A"}</span></p>
                     <p><strong>Vehicle Number:</strong> ${b.driver?.vehicle_number || "N/A"}</p>
                     <p><strong>Ambulance Type:</strong> ${b.ambulance_type || "N/A"}</p>
                   </div>
 
-                  ${(pickupBase64 || dropBase64) ? `
-                  <div style="flex:1; display:flex; flex-direction:column; gap:12px; align-items:center;">
+                  ${dropBase64 ? `
+                  <div style="flex:1; display:flex; flex-direction:column; gap:12px; align-items:center; margin-top:70px;">
                     <div style="text-align:center;">
-                      <p style="margin:0 0 5px 0; font-size:13px; font-weight:bold;">Pickup</p>
-                      ${pickupBase64
-            ? `<img src="${pickupBase64}" style="width:200px; height:170px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />`
-            : `<div style="width:200px; height:170px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px; color:#888; font-size:12px;">No Photo</div>`
-          }
-                    </div>
-                    <div style="text-align:center;">
-                      <p style="margin:0 0 5px 0; font-size:13px; font-weight:bold;">Drop</p>
-                      ${dropBase64
-            ? `<img src="${dropBase64}" style="width:200px; height:170px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />`
-            : `<div style="width:200px; height:170px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px; color:#888; font-size:12px;">No Photo</div>`
-          }
+                      <p style="margin:0 0 5px 0; font-size:13px; font-weight:bold;">Drop Photo</p>
+                      <img src="${dropBase64}" style="width:200px; height:200px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />
                     </div>
                   </div>
                   ` : ''}
@@ -420,10 +380,7 @@ export default function ReportPage() {
               <!-- Signature Section -->
               <div style="margin-top:40px; display:flex; justify-content:flex-end; padding:0 40px;">
                <div style="text-align:center; width:45%;">
-                  ${signatureBase64
-          ? `<img src="${signatureBase64}" style="width:160px; height:70px; object-fit:contain; margin-bottom:-10px;" />`
-          : `<div style="width:160px; height:70px;"></div>`
-        }
+                  ${signatureBase64 ? `<img src="${signatureBase64}" style="width:160px; height:70px; object-fit:contain; margin-bottom:-10px;" />` : `<div style="width:160px; height:70px;"></div>`}
                   <div style="border-bottom:2px solid #000; width:100%; margin-bottom:8px;"></div>
                   <p style="margin:0; font-weight:bold; font-size:16px;">Founder Signature</p>
                   <p style="margin:4px 0 0 0; color:#555; font-size:13px;">Nagendra Nath</p>
@@ -432,10 +389,7 @@ export default function ReportPage() {
 
               <!-- Footer Photo -->
               <div style="margin-top:30px; border-radius:15px; overflow:hidden; border:2px solid #008000; position:relative;">
-                ${footerBase64
-          ? `<img src="${footerBase64}" style="width:100%; height:120px; object-fit:cover; display:block;" />`
-          : `<div style="width:100%; height:120px; background:#f0f0f0;"></div>`
-        }
+                ${footerBase64 ? `<img src="${footerBase64}" style="width:100%; height:120px; object-fit:cover; display:block;" />` : `<div style="width:100%; height:120px; background:#f0f0f0;"></div>`}
                 <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,128,0,0.9)); padding:6px; text-align:center; color:#ffffff;">
                   <p style="margin:0; font-size:16px; font-weight:bold; letter-spacing:1px;">FOR EMERGENCY &amp; FREE AMBULANCE SERVICE</p>
                   <p style="margin:3px 0 0 0;font-weight:bold; font-size:15px; opacity:0.9;">Available 24/7 • Completely Free • Serving the Community</p>
@@ -454,7 +408,6 @@ export default function ReportPage() {
       `)
       iframeDoc.close()
 
-      // Wait for images inside iframe to load
       const images = iframeDoc.querySelectorAll("img")
       await Promise.all(
         Array.from(images).map(
@@ -609,10 +562,10 @@ export default function ReportPage() {
                         <TableHead className="whitespace-nowrap">Driver Mobile</TableHead>
                         <TableHead className="whitespace-nowrap">Vehicle No</TableHead>
                         <TableHead className="whitespace-nowrap">Amb. Type</TableHead>
-                        <TableHead className="whitespace-nowrap">Pickup Photo</TableHead>
                         <TableHead className="whitespace-nowrap">Drop Photo</TableHead>
                         <TableHead className="whitespace-nowrap">Status</TableHead>
                         <TableHead className="whitespace-nowrap">Date & Time</TableHead>
+                        <TableHead className="whitespace-nowrap">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -628,20 +581,6 @@ export default function ReportPage() {
                             <TableCell className="whitespace-nowrap">{b.driver?.vehicle_number || "N/A"}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-slate-50">{b.ambulance_type}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              {b.pickup_proof_url ? (
-                                <img
-                                  src={getImageUrl(b.pickup_proof_url)}
-                                  alt="Pickup"
-                                  className="h-14 w-14 rounded-md object-cover cursor-pointer border border-slate-200 hover:opacity-80 transition-opacity shadow-sm"
-                                  onClick={() => setSelectedImage(getImageUrl(b.pickup_proof_url))}
-                                />
-                              ) : (
-                                <div className="h-14 w-14 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">
-                                  <ImageOff className="h-5 w-5" />
-                                </div>
-                              )}
                             </TableCell>
                             <TableCell>
                               {b.drop_proof_url ? (
@@ -662,6 +601,11 @@ export default function ReportPage() {
                             </TableCell>
                             <TableCell className="whitespace-nowrap text-xs text-slate-600">
                               {formatDate(b.created_at)}
+                            </TableCell>
+                            <TableCell>
+                              <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => openEditDialog(b)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))
@@ -695,6 +639,7 @@ export default function ReportPage() {
                         <TableHead className="whitespace-nowrap">Aadhaar</TableHead>
                         <TableHead className="whitespace-nowrap">Condition</TableHead>
                         <TableHead className="whitespace-nowrap">Certificate</TableHead>
+                        <TableHead className="whitespace-nowrap">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -725,11 +670,16 @@ export default function ReportPage() {
                                 {generatingCertId === b.id ? "Wait..." : "PDF"}
                               </Button>
                             </TableCell>
+                            <TableCell>
+                              <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => openEditDialog(b)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={15} className="h-24 text-center text-slate-500">
+                          <TableCell colSpan={16} className="h-24 text-center text-slate-500">
                             No patient reports found.
                           </TableCell>
                         </TableRow>
@@ -846,6 +796,119 @@ export default function ReportPage() {
                 alt="Preview"
                 className="max-h-[80vh] w-auto rounded-lg object-contain"
               />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ✅✅✅ EDIT BOOKING DIALOG (AMBULANCE DETAILS REMOVED) ✅✅✅ */}
+      <Dialog open={!!editingBooking} onOpenChange={(isOpen) => { if (!isOpen) { setEditingBooking(null); setEditDropFile(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <DialogTitle>Edit Booking #{editingBooking?.id}</DialogTitle>
+          </DialogHeader>
+          
+          {editingBooking && (
+            <div className="space-y-4 pt-4">
+              
+              {/* Patient Info */}
+              <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserRound className="h-4 w-4"/> Patient Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Patient Name</label>
+                    <Input value={editingBooking.patient_name || ""} onChange={(e) => handleEditChange("patient_name", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Contact Number</label>
+                    <Input value={editingBooking.patient_contact || ""} onChange={(e) => handleEditChange("patient_contact", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Age</label>
+                    <Input type="number" value={editingBooking.patient_age || ""} onChange={(e) => handleEditChange("patient_age", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Gender</label>
+                    <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={editingBooking.patient_gender || ""} onChange={(e) => handleEditChange("patient_gender", e.target.value)}>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Location Info */}
+              <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><HeartPulse className="h-4 w-4"/> Location & Medical</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="text-xs font-medium text-slate-600">Pickup Address</label>
+                    <Input value={editingBooking.pickup_address || ""} onChange={(e) => handleEditChange("pickup_address", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Village</label>
+                    <Input value={editingBooking.patient_village || ""} onChange={(e) => handleEditChange("patient_village", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Police Station</label>
+                    <Input value={editingBooking.patient_police_station || ""} onChange={(e) => handleEditChange("patient_police_station", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">District</label>
+                    <Input value={editingBooking.patient_district || ""} onChange={(e) => handleEditChange("patient_district", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Pincode</label>
+                    <Input value={editingBooking.patient_pincode || ""} onChange={(e) => handleEditChange("patient_pincode", e.target.value)} />
+                  </div>
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="text-xs font-medium text-slate-600">Medical Condition</label>
+                    <Input value={editingBooking.medical_condition || ""} onChange={(e) => handleEditChange("medical_condition", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Drop Photo Update Section */}
+              <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Camera className="h-4 w-4"/> Drop Photo</h3>
+                <div className="flex items-center gap-4">
+                  {editingBooking.drop_proof_url ? (
+                    <img 
+                      src={getImageUrl(editingBooking.drop_proof_url)} 
+                      alt="Current Drop" 
+                      className="h-20 w-20 rounded-md object-cover border border-slate-200 shadow-sm" 
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-md bg-slate-200 flex items-center justify-center text-slate-500">
+                      <ImageOff className="h-8 w-8" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <label className="text-xs font-medium text-slate-600">Upload New Photo (Optional)</label>
+                    <Input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => setEditDropFile(e.target.files[0] || null)} 
+                      className="mt-1"
+                    />
+                    {editDropFile && (
+                      <p className="text-xs text-emerald-600 mt-1 font-medium">Selected: {editDropFile.name}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ❌ AMBULANCE DETAILS SECTION REMOVED FROM HERE */}
+
+              {/* Save/Cancel Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button variant="outline" onClick={() => { setEditingBooking(null); setEditDropFile(null); }}>Cancel</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSaveEdit} disabled={savingEdit}>
+                  {savingEdit ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+
             </div>
           )}
         </DialogContent>

@@ -28,7 +28,6 @@ import {
   updateBookingStatus,
   acceptBooking,
   rejectBooking,
-  uploadPickupProof,
   uploadDropProof,
 } from "./api/driverapi"
 
@@ -54,12 +53,10 @@ export default function DriverDashboard() {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [driverId, setDriverId] = useState(null)
-  const [pickupProof, setPickupProof] = useState({})
   const [dropProof, setDropProof] = useState({})
-  const [pickupKm, setPickupKm] = useState({})
-  const [dropKm, setDropKm] = useState({})
 
   const completedTrips = bookings.filter((b) => b.status === "completed").length
+  const visibleBookings = bookings.filter((b) => b.status !== "completed")
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -114,32 +111,26 @@ export default function DriverDashboard() {
   }
 
   const handleReached = async (id) => {
-    if (!pickupProof[id]) return toast.error("Upload proof photo")
-    if (!pickupKm[id]) return toast.error("Enter pickup KM reading")
-
-    try {
-      const uploadRes = await uploadPickupProof(id, pickupProof[id])
-      await handleAction(id, "on_the_way", {
-        pickup_km: pickupKm[id],
-        pickup_proof_url: uploadRes.url,
-      })
-      toast.success("Pickup proof uploaded & saved")
-    } catch {
-      toast.error("Upload failed")
-    }
+    await handleAction(id, "on_the_way")
   }
 
   const handleCompleteRide = async (id) => {
-    if (!dropProof[id]) return toast.error("Upload hospital photo")
-    if (!dropKm[id]) return toast.error("Enter drop KM reading")
-
     try {
-      const uploadRes = await uploadDropProof(id, dropProof[id])
-      await handleAction(id, "completed", {
-        drop_km: dropKm[id],
-        drop_proof_url: uploadRes.url,
+      let extraData = {}
+      
+      if (dropProof[id]) {
+        const uploadRes = await uploadDropProof(id, dropProof[id])
+        extraData.drop_proof_url = uploadRes.url
+      }
+
+      await handleAction(id, "completed", extraData)
+      toast.success("Ride completed!")
+      
+      setDropProof((prev) => {
+        const newState = { ...prev }
+        delete newState[id]
+        return newState
       })
-      toast.success("Ride completed & photo saved")
     } catch {
       toast.error("Completion failed")
     }
@@ -176,7 +167,7 @@ export default function DriverDashboard() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 mt-6 space-y-4">
-        {bookings.length === 0 && (
+        {visibleBookings.length === 0 && (
           <div className="mt-20 flex flex-col items-center justify-center text-muted-foreground">
             <Inbox className="h-16 w-16 mb-4 stroke-1" />
             <h3 className="text-lg font-semibold">No Bookings Assigned</h3>
@@ -184,7 +175,7 @@ export default function DriverDashboard() {
           </div>
         )}
 
-        {bookings.map((booking) => (
+        {visibleBookings.map((booking) => (
           <Card key={booking.id} className="overflow-hidden border shadow-sm">
             {/* Card Header - Reg No & Status */}
             <div className="bg-slate-50 px-4 py-3 border-b flex justify-between items-center">
@@ -197,12 +188,11 @@ export default function DriverDashboard() {
             </div>
 
             <CardContent className="p-4 space-y-4">
-              {/* Patient Details */}
+              {/* Booker Details */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-slate-800">
                   <User className="h-4 w-4 text-slate-500" />
-                  <span className="font-medium">{booking.patient_name}</span>
-                  <span className="text-muted-foreground">({booking.patient_age})</span>
+                  <span className="font-medium">{booking.booker_name}</span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-800">
                   <Phone className="h-4 w-4 text-slate-500" />
@@ -285,37 +275,12 @@ export default function DriverDashboard() {
                 {booking.status === "assigned" && booking.driver_id === driverId && (
                   <div className="space-y-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
                     <p className="text-sm font-semibold text-blue-900">Action Required: Reach Pickup</p>
-                    <Input 
-                      type="number" 
-                      placeholder="Enter Pickup KM Reading" 
-                      value={pickupKm[booking.id] || ""} 
-                      onChange={(e) => setPickupKm((prev) => ({ ...prev, [booking.id]: e.target.value }))} 
-                    />
-                    <div className="flex items-center gap-2">
-                      <input 
-                        id={`pickup-photo-${booking.id}`} 
-                        type="file" 
-                        accept="image/*" 
-                        capture="environment" 
-                        className="hidden" 
-                        onChange={(e) => setPickupProof((prev) => ({ ...prev, [booking.id]: e.target.files[0] }))} 
-                      />
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="flex-1"
-                        onClick={() => document.getElementById(`pickup-photo-${booking.id}`).click()}
-                      >
-                        <Camera className="h-4 w-4 mr-2" /> 
-                        {pickupProof[booking.id] ? "Photo Added ✓" : "Take Pickup Photo"}
-                      </Button>
-                      <Button 
-                        className="flex-1 bg-blue-600 hover:bg-blue-700"
-                        onClick={() => handleReached(booking.id)}
-                      >
-                        <Flag className="h-4 w-4 mr-2" /> Reached
-                      </Button>
-                    </div>
+                    <Button 
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      onClick={() => handleReached(booking.id)}
+                    >
+                      <Flag className="h-4 w-4 mr-2" /> Reached Pickup
+                    </Button>
                   </div>
                 )}
 
@@ -328,37 +293,34 @@ export default function DriverDashboard() {
                 {booking.status === "picked" && booking.driver_id === driverId && (
                   <div className="space-y-3 bg-orange-50 p-3 rounded-lg border border-orange-100">
                     <p className="text-sm font-semibold text-orange-900">Action Required: Complete Trip</p>
-                    <Input 
-                      type="number" 
-                      placeholder="Enter Drop KM Reading" 
-                      value={dropKm[booking.id] || ""} 
-                      onChange={(e) => setDropKm((prev) => ({ ...prev, [booking.id]: e.target.value }))} 
-                    />
+                    
+                    {/* Optional Drop Photo Upload */}
                     <div className="flex items-center gap-2">
                       <input 
                         id={`drop-photo-${booking.id}`} 
                         type="file" 
-                        accept="image/*" 
-                        capture="environment" 
+                        accept="image/*"
+                        // ✅ REMOVED capture="environment" so mobile prompts Camera OR Gallery
                         className="hidden" 
                         onChange={(e) => setDropProof((prev) => ({ ...prev, [booking.id]: e.target.files[0] }))} 
                       />
                       <Button 
                         type="button" 
                         variant="outline" 
-                        className="flex-1"
+                        className="w-full"
                         onClick={() => document.getElementById(`drop-photo-${booking.id}`).click()}
                       >
                         <Camera className="h-4 w-4 mr-2" /> 
-                        {dropProof[booking.id] ? "Photo Added ✓" : "Take Hospital Photo"}
-                      </Button>
-                      <Button 
-                        className="flex-1 bg-green-600 hover:bg-green-700"
-                        onClick={() => handleCompleteRide(booking.id)}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" /> Complete
+                        {dropProof[booking.id] ? "Photo Added ✓" : "Upload Hospital Photo (Optional)"}
                       </Button>
                     </div>
+
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={() => handleCompleteRide(booking.id)}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" /> Complete Ride
+                    </Button>
                   </div>
                 )}
               </div>

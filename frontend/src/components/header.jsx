@@ -42,17 +42,16 @@ export function Header() {
   }
 
   return (
-    // <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/80 backdrop-blur-md">
-    <header className="sticky top-0 z-50 w-full bg-white border-b">
+    <header className="sticky top-0 z-50 w-full bg-white border-b shadow-sm">
 
       {/* TOP BAR */}
-      <div className="container mx-auto flex flex-col lg:flex-row lg:h-16 items-center justify-between px-4 py-3 lg:py-0 gap-3">
+      <div className="container mx-auto flex flex-col lg:flex-row items-center justify-between px-0 sm:px-4 py-2 lg:py-0 gap-3">
 
-        {/* LEFT: Logo + Mobile Title */}
-        <div className="flex items-center gap-3">
-          
-          {/* Logo */}
-          <div className="flex h-15 w-15 items-center justify-center rounded-lg overflow-hidden bg-white shadow-sm">
+        {/* LEFT */}
+        <div className="flex items-center gap-2 sm:gap-3">
+
+          {/* Logo 1 (Always Visible) */}
+          <div className="flex h-20 w-20 sm:h-24 sm:w-24 lg:h-36 lg:w-36 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm border">
             <img
               src="/logo.jpeg"
               alt="Logo"
@@ -65,114 +64,116 @@ export function Header() {
 
             <img
               src="/ambulance-seba.png"
-              alt="Basanta Kumar Nath"
-              className="h-14 w-auto max-w-[280px] object-contain lg:hidden"
+              alt="Ambulance Seba"
+              className="h-10 sm:h-12 w-auto max-w-[220px] sm:max-w-[280px] object-contain lg:hidden"
             />
 
             {/* MOBILE BUTTONS */}
-            <div className="flex flex-wrap gap-1 mt-1 lg:hidden">
+            <div className="flex flex-wrap gap-2 mt-2 lg:hidden">
 
               <a
                 href="tel:9776696669"
-                className="flex items-center gap-1 rounded-full bg-red-600 px-2 py-1 text-xs font-semibold text-white"
+                className="flex items-center gap-1 rounded-full bg-red-600 px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white"
               >
-                <Phone className="h-1 w-1" />
+                <Phone className="h-3 w-3" />
                 9776696669
               </a>
 
               <a
                 href="tel:9348616669"
-                className="flex items-center gap-1 rounded-full bg-red-600 px-2 py-1 text-xs font-semibold text-white"
+                className="flex items-center gap-1 rounded-full bg-red-600 px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white"
               >
-                <Phone className="h-1 w-1" />
+                <Phone className="h-3 w-3" />
                 9348616669
               </a>
-
-              {/* <a
-                href="tel:9006706355"
-                className="flex items-center gap-1 rounded-full bg-red-600 px-2 py-1 text-xs font-semibold text-white"
-              >
-                <Phone className="h-1 w-1" />
-                9006706355
-              </a> */}
 
               {!isLoggedIn ? (
                 <button
                   onClick={handleLogin}
-                  className="flex items-center gap-1 rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white"
+                  className="flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white"
                 >
-                  <LogIn className="h-1 w-1" />
+                  <LogIn className="h-3 w-3" />
                   Login
                 </button>
               ) : (
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-1 rounded-full bg-black px-2 py-1 text-xs font-semibold text-white"
+                  className="flex items-center gap-1 rounded-full bg-black px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white"
                 >
-                  <LogOut className="h-1 w-1" />
+                  <LogOut className="h-3 w-3" />
                   Logout
                 </button>
               )}
-
             </div>
           </div>
         </div>
 
-        {/* CENTER IMAGE (Desktop Only) */}
-        <div className="hidden lg:flex flex-1 justify-center px-4">
+        {/* CENTER IMAGE */}
+        <div className="hidden lg:flex flex-1 px-0">
           <img
             src="/ambulance-seba.png"
-            alt="Basanta Kumar Nath"
-            className="h-15 w-auto max-w-lg object-contain"
+            alt="Ambulance Seba"
+            className="h-30 xl:h-32 w-auto max-w-4xl "
           />
         </div>
 
-        {/* DESKTOP BUTTONS */}
-        <div className="hidden lg:flex items-center gap-3">
+        {/* Logo 2 (Hidden on Mobile, Visible on Desktop) ✅ */}
+        <div className="hidden lg:flex h-36 w-36 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm border">
+          <img
+            src="/logo.jpeg"
+            alt="Logo"
+            className="h-full w-full object-cover"
+          />
+        </div>
+
+      </div>
+
+      <div className="container mt-[10px] mb-[5px] mx-auto flex flex-col lg:flex-row items-center justify-end px-0 sm:px-4 py-2 lg:py-0 gap-3">
+        <div className="hidden lg:flex items-center gap-4">
 
           <a
             href="tel:9776696669"
-            className="flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:scale-105"
+            className="flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm xl:text-base font-semibold text-white hover:scale-105 transition"
           >
             <Phone className="h-4 w-4" />
-            <span>9776696669</span>
+            9776696669
           </a>
 
           <a
             href="tel:9348616669"
-            className="flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:scale-105"
+            className="flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm xl:text-base font-semibold text-white hover:scale-105 transition"
           >
             <Phone className="h-4 w-4" />
-            <span>9348616669</span>
+            9348616669
           </a>
 
           <a
             href="tel:9006706355"
-            className="flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:scale-105"
+            className="flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm xl:text-base font-semibold text-white hover:scale-105 transition"
           >
             <Phone className="h-4 w-4" />
-            <span>9006706355</span>
+            9006706355
           </a>
 
           {!isLoggedIn ? (
             <button
               onClick={handleLogin}
-              className="flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2 text-sm xl:text-base font-semibold text-white hover:bg-blue-700"
             >
               <LogIn className="h-4 w-4" />
-             
+              Login
             </button>
           ) : (
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 rounded-full bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+              className="flex items-center gap-2 rounded-full bg-black px-5 py-2 text-sm xl:text-base font-semibold text-white hover:bg-gray-800"
             >
               <LogOut className="h-4 w-4" />
               Logout ({role})
             </button>
           )}
 
-        </div>
+        </div> 
       </div>
     </header>
   )

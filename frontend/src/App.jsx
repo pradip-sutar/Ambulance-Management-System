@@ -9,6 +9,7 @@ import ReportPage from "./pages/admin-report.jsx";
 import DriverPage from "./pages/driverlayout.jsx";
 import Home from "./pages/homepage.jsx";
 import ServicesPage from "./pages/service.jsx";
+import AdminGallery from "./pages/admingallery.jsx";
 
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin-report" element={<ReportPage />} />
+        <Route path="/admin-gallery" element={<AdminGallery />} />
         <Route path="/driver" element={<DriverPage/>} />
         <Route path="/services" element={<ServicesPage />} />
       </Routes>
