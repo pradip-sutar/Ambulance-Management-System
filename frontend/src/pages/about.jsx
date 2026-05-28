@@ -49,13 +49,19 @@ export default function AboutPage() {
 const loadGallery = async () => {
   try {
     const data = await getGalleryImages()
-    const base = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
+
+    const base = import.meta.env.VITE_API_BASE_URL.replace("/api", "")
+
     setGalleryImages(
       data.map((img) => {
         const url = img.image_url
-        // If already a full URL, use as-is
+
+        if (!url) return ""
+
+        // already full URL
         if (url.startsWith("http")) return url
-        // Otherwise prepend the backend base URL
+
+        // add backend domain
         return `${base}${url}`
       })
     )
@@ -74,7 +80,10 @@ const loadGallery = async () => {
 
 
   // Clone first 'visibleCount' images to the end for infinite loop effect
-  const clonedImages = [...galleryImages, ...galleryImages.slice(0, visibleCount)]
+  const clonedImages =
+  galleryImages.length > visibleCount
+    ? [...galleryImages, ...galleryImages.slice(0, visibleCount)]
+    : galleryImages
 
   useEffect(() => {
     window.scrollTo(0, 0)

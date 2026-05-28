@@ -10,11 +10,16 @@ from gallery.model import GalleryImage
 
 router = APIRouter(prefix="/gallery", tags=["Gallery"])
 
-UPLOAD_DIR = "uploads"
+# ✅ Better upload path
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, "../uploads")
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 MAX_IMAGES = 20
 
 
-# Upload Image
+# ================= UPLOAD IMAGE =================
 @router.post("/upload")
 async def upload_gallery_image(
     file: UploadFile = File(...),
@@ -22,6 +27,7 @@ async def upload_gallery_image(
 ):
     # ✅ Enforce max 20 images
     count = db.query(GalleryImage).count()
+
     if count >= MAX_IMAGES:
         raise HTTPException(
             status_code=400,
@@ -30,26 +36,38 @@ async def upload_gallery_image(
 
     # ✅ Validate file type
     if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Only image files are allowed.")
+        raise HTTPException(
+            status_code=400,
+            detail="Only image files are allowed.",
+        )
 
     # ✅ Validate file size (max 5MB)
-    file.file.seek(0, 2)  # seek to end
+    file.file.seek(0, 2)
     file_size = file.file.tell()
-    file.file.seek(0)  # reset to beginning
+    file.file.seek(0)
 
     if file_size > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File size exceeds 5MB limit.")
+        raise HTTPException(
+            status_code=400,
+            detail="File size exceeds 5MB limit.",
+        )
 
+    # ✅ Generate unique filename
     file_ext = file.filename.split(".")[-1]
     filename = f"{uuid4()}.{file_ext}"
+
     file_path = os.path.join(UPLOAD_DIR, filename)
 
+    # ✅ Save file
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    image_url = f"/uploads/{filename}"
+    # ✅ Correct image URL
+    image_url = f"/api/uploads/{filename}"
 
+    # ✅ Save in DB
     new_image = GalleryImage(image_url=image_url)
+
     db.add(new_image)
     db.commit()
     db.refresh(new_image)
@@ -60,24 +78,29 @@ async def upload_gallery_image(
     }
 
 
-# Get All Images
+# ================= GET ALL IMAGES =================
 @router.get("/")
 def get_gallery_images(db: Session = Depends(get_db)):
     images = db.query(GalleryImage).all()
     return images
 
 
-# Delete Image
+# ================= DELETE IMAGE =================
 @router.delete("/{image_id}")
 def delete_gallery_image(image_id: int, db: Session = Depends(get_db)):
-    image = db.query(GalleryImage).filter(GalleryImage.id == image_id).first()
+    image = db.query(GalleryImage).filter(
+        GalleryImage.id == image_id
+    ).first()
 
     if not image:
-        raise HTTPException(status_code=404, detail="Image not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Image not found",
+        )
 
     # ✅ Delete file from disk
-    file_path = image.image_url.lstrip("/")
-    full_path = os.path.join(".", file_path)
+    filename = image.image_url.replace("/api/uploads/", "")
+    full_path = os.path.join(UPLOAD_DIR, filename)
 
     if os.path.exists(full_path):
         os.remove(full_path)
@@ -85,4 +108,6 @@ def delete_gallery_image(image_id: int, db: Session = Depends(get_db)):
     db.delete(image)
     db.commit()
 
-    return {"message": "Deleted successfully"}
+    return {
+        "message": "Deleted successfully"
+    }

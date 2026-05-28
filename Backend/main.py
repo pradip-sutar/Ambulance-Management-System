@@ -65,7 +65,7 @@ app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 
 # Uploaded images
 os.makedirs(UPLOADS_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+# app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 app.mount("/api/uploads", StaticFiles(directory=UPLOADS_DIR), name="api-uploads")  # ✅ ADD THIS
 
 # ================= API ROUTES =================

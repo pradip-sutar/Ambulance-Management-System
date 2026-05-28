@@ -67,7 +67,17 @@ class DriverResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class BookingUpdate(BaseModel):
+    # Booking Person
+    booker_name: Optional[str] = None
+    booker_phone: Optional[str] = None
+    
+    # Date & Time
+    booking_date: Optional[str] = None
+    booking_time: Optional[str] = None
+    
+    # Patient fields
     patient_name: Optional[str] = None
     patient_age: Optional[int] = None
     patient_gender: Optional[str] = None
@@ -80,6 +90,12 @@ class BookingUpdate(BaseModel):
     pickup_address: Optional[str] = None
     drop_address: Optional[str] = None
     medical_condition: Optional[str] = None
+    
+    # Caretaker fields
+    caretaker_name: Optional[str] = None
+    caretaker_phone: Optional[str] = None
+    caretaker_relation: Optional[str] = None
+    
     ambulance_type: Optional[str] = None
     status: Optional[str] = None
 # =========================================================

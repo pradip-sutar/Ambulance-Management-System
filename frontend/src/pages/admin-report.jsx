@@ -699,6 +699,8 @@ export default function ReportPage() {
                         <TableHead className="whitespace-nowrap">Care Taker Mobile</TableHead>
                         <TableHead className="whitespace-nowrap">Relationship</TableHead>
                         <TableHead className="whitespace-nowrap">Status</TableHead>
+                        {/* ✅ ADDED ACTION COLUMN */}
+                        <TableHead className="whitespace-nowrap">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -714,11 +716,17 @@ export default function ReportPage() {
                             <TableCell>
                               <Badge variant="outline" className={getStatusColor(b.status)}>{b.status}</Badge>
                             </TableCell>
+                            {/* ✅ ADDED EDIT BUTTON */}
+                            <TableCell>
+                              <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => openEditDialog(b)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center text-slate-500">
+                          <TableCell colSpan={8} className="h-24 text-center text-slate-500">
                             No caretaker reports found.
                           </TableCell>
                         </TableRow>
@@ -739,6 +747,8 @@ export default function ReportPage() {
                         <TableHead className="whitespace-nowrap">Amb. Type</TableHead>
                         <TableHead className="whitespace-nowrap">Status</TableHead>
                         <TableHead className="whitespace-nowrap">Date & Time</TableHead>
+                        {/* ✅ ADDED ACTION COLUMN */}
+                        <TableHead className="whitespace-nowrap">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -757,11 +767,17 @@ export default function ReportPage() {
                             <TableCell className="whitespace-nowrap text-xs text-slate-600">
                               {formatDate(b.created_at)}
                             </TableCell>
+                            {/* ✅ ADDED EDIT BUTTON */}
+                            <TableCell>
+                              <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => openEditDialog(b)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={8} className="h-24 text-center text-slate-500">
+                          <TableCell colSpan={9} className="h-24 text-center text-slate-500">
                             No booking person reports found.
                           </TableCell>
                         </TableRow>
@@ -801,7 +817,7 @@ export default function ReportPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ✅✅✅ EDIT BOOKING DIALOG (AMBULANCE DETAILS REMOVED) ✅✅✅ */}
+      {/* ✅✅✅ EDIT BOOKING DIALOG (EXPANDED) ✅✅✅ */}
       <Dialog open={!!editingBooking} onOpenChange={(isOpen) => { if (!isOpen) { setEditingBooking(null); setEditDropFile(null); } }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
@@ -811,6 +827,29 @@ export default function ReportPage() {
           {editingBooking && (
             <div className="space-y-4 pt-4">
               
+              {/* ✅ NEW: Booking Person & Date/Time */}
+              <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><ClipboardList className="h-4 w-4"/> Booking Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Booker Name</label>
+                    <Input value={editingBooking.booker_name || ""} onChange={(e) => handleEditChange("booker_name", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Booker Phone</label>
+                    <Input value={editingBooking.booker_phone || ""} onChange={(e) => handleEditChange("booker_phone", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Booking Date</label>
+                    <Input type="date" value={editingBooking.booking_date || ""} onChange={(e) => handleEditChange("booking_date", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Booking Time</label>
+                    <Input type="time" value={editingBooking.booking_time || ""} onChange={(e) => handleEditChange("booking_time", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
               {/* Patient Info */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserRound className="h-4 w-4"/> Patient Details</h3>
@@ -846,6 +885,10 @@ export default function ReportPage() {
                     <label className="text-xs font-medium text-slate-600">Pickup Address</label>
                     <Input value={editingBooking.pickup_address || ""} onChange={(e) => handleEditChange("pickup_address", e.target.value)} />
                   </div>
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="text-xs font-medium text-slate-600">Drop Address</label>
+                    <Input value={editingBooking.drop_address || ""} onChange={(e) => handleEditChange("drop_address", e.target.value)} />
+                  </div>
                   <div>
                     <label className="text-xs font-medium text-slate-600">Village</label>
                     <Input value={editingBooking.patient_village || ""} onChange={(e) => handleEditChange("patient_village", e.target.value)} />
@@ -865,6 +908,25 @@ export default function ReportPage() {
                   <div className="col-span-1 sm:col-span-2">
                     <label className="text-xs font-medium text-slate-600">Medical Condition</label>
                     <Input value={editingBooking.medical_condition || ""} onChange={(e) => handleEditChange("medical_condition", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              {/* ✅ NEW: Caretaker Details */}
+              <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserRound className="h-4 w-4"/> Caretaker Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Caretaker Name</label>
+                    <Input value={editingBooking.caretaker_name || ""} onChange={(e) => handleEditChange("caretaker_name", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Caretaker Phone</label>
+                    <Input value={editingBooking.caretaker_phone || ""} onChange={(e) => handleEditChange("caretaker_phone", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Relation</label>
+                    <Input value={editingBooking.caretaker_relation || ""} onChange={(e) => handleEditChange("caretaker_relation", e.target.value)} />
                   </div>
                 </div>
               </div>
@@ -898,8 +960,6 @@ export default function ReportPage() {
                   </div>
                 </div>
               </div>
-
-              {/* ❌ AMBULANCE DETAILS SECTION REMOVED FROM HERE */}
 
               {/* Save/Cancel Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t">

@@ -1,8 +1,25 @@
 import { Link } from "react-router-dom"
+import { useState, useEffect } from "react"
 import { Ambulance, Phone, Mail, MapPin } from "lucide-react"
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
+
+useEffect(() => {
+  const checkAdminLogin = () => {
+    setIsAdminLoggedIn(!!localStorage.getItem("token"))
+  }
+
+  checkAdminLogin()
+
+  window.addEventListener("storage", checkAdminLogin)
+
+  return () => {
+    window.removeEventListener("storage", checkAdminLogin)
+  }
+}, [])
+
 
   return (
     <footer className="bg-slate-900 text-gray-300">
@@ -84,6 +101,16 @@ export function Footer() {
               <li><Link to="/about-us" className="text-sm hover:text-blue-400 transition-colors duration-200 flex items-center gap-2"><span className="text-blue-600">›</span> About Us</Link></li>
               <li><Link to="/services" className="text-sm hover:text-blue-400 transition-colors duration-200 flex items-center gap-2"><span className="text-blue-600">›</span> Our Services</Link></li>
               <li><Link to="/privacy-policy" className="text-sm hover:text-blue-400 transition-colors duration-200 flex items-center gap-2"><span className="text-blue-600">›</span> Privacy Policy</Link></li>
+              {isAdminLoggedIn && (
+  <li>
+    <Link
+      to="/admin"
+      className="text-sm hover:text-blue-400 transition-colors duration-200 flex items-center gap-2"
+    >
+      <span className="text-blue-600">›</span> Admin Dashboard
+    </Link>
+  </li>
+)}
             </ul>
           </div>
 
