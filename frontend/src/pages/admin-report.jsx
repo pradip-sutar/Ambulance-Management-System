@@ -186,7 +186,7 @@ export default function ReportPage() {
       }
 
       return patientMatch && mobileMatch && driverMatch && dateMatch
-    })
+    }).sort((a, b) => b.id - a.id) // DESCENDING ORDER
   }, [bookings, filters])
 
   if (loading) {
@@ -624,6 +624,7 @@ export default function ReportPage() {
                   <>
                     <TableHeader className="bg-slate-50 border-b border-slate-100">
                       <TableRow>
+                        <TableHead className="whitespace-nowrap">Booking Id</TableHead>
                         <TableHead className="whitespace-nowrap">Date</TableHead>
                         <TableHead className="whitespace-nowrap">Time</TableHead>
                         <TableHead className="whitespace-nowrap">Register No</TableHead>
@@ -645,7 +646,9 @@ export default function ReportPage() {
                     <TableBody>
                       {filteredBookings.length > 0 ? (
                         filteredBookings.map((b) => (
+                          
                           <TableRow key={b.id} className="hover:bg-slate-50/50">
+                            <TableCell> {b.id}</TableCell>
                             <TableCell className="whitespace-nowrap">{b.booking_date || "N/A"}</TableCell>
                             <TableCell>{b.booking_time || "N/A"}</TableCell>
                             <TableCell>{b.registration_number}</TableCell>

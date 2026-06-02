@@ -623,6 +623,13 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                 </div>
+                   <div className="space-y-3">
+                <div className="flex items-center gap-2 font-semibold text-slate-800 border-b pb-2">
+                <UserIcon className="h-4 w-4 text-blue-600" />
+                Patient Adress
+              </div>
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-slate-600">Village</Label>
                   <Input
@@ -667,7 +674,9 @@ export default function AdminDashboard() {
                   />
                 </div>
 
-                <div className="space-y-1 sm:col-span-2">
+                </div>
+</div>
+                {/* <div className="space-y-1 sm:col-span-2">
                   <Label className="text-xs text-slate-600">Patient Address</Label>
                   <Input
                     placeholder="Full Address"
@@ -676,7 +685,7 @@ export default function AdminDashboard() {
                       setPatientForm({ ...patientForm, patient_address: e.target.value })
                     }
                   />
-                </div>
+                </div> */}
               </div>
 
               <div className="space-y-1">
@@ -690,7 +699,7 @@ export default function AdminDashboard() {
                   className="min-h-[80px]"
                 />
               </div>
-            </div>
+           
 
             {/* ---- CARETAKER DETAILS ---- */}
             <div className="space-y-3">
