@@ -46,7 +46,7 @@ export default function ReportPage() {
   const [generatingCertId, setGeneratingCertId] = useState(null)
   const [reportType, setReportType] = useState("ambulance")
   const [selectedImage, setSelectedImage] = useState(null)
-  
+
   const [editingBooking, setEditingBooking] = useState(null)
   const [savingEdit, setSavingEdit] = useState(false)
   const [editDropFile, setEditDropFile] = useState(null)
@@ -215,7 +215,9 @@ export default function ReportPage() {
         "Vehicle Number": b.driver?.vehicle_number || "N/A",
         "Ambulance Type": b.ambulance_type,
         Status: b.status,
-        "Date & Time": b.created_at ? formatDate(b.created_at) : "N/A",
+        "Date & Time": b.booking_date
+          ? new Date(b.booking_date).toLocaleDateString('en-IN')
+          : formatDate(b.created_at),
       }))
     }
 
@@ -259,7 +261,9 @@ export default function ReportPage() {
         "Patient Name": b.patient_name,
         "Ambulance Type": b.ambulance_type,
         Status: b.status,
-        "Date & Time": b.created_at ? formatDate(b.created_at) : "N/A",
+        "Date & Time": b.booking_date
+          ? new Date(b.booking_date).toLocaleDateString('en-IN')
+          : formatDate(b.created_at),
       }))
     }
 
@@ -345,13 +349,18 @@ export default function ReportPage() {
               <div style="margin-top:10px; border:2px solid #008000; border-radius:15px; padding:20px; color:#000000;">
                 <div style="display:flex; justify-content:space-between; gap:20px; align-items:flex-start;">
                   <div style="flex:2;">
-                    <p><strong>Date:</strong> ${b.created_at ? new Date(b.created_at).toLocaleDateString() : "N/A"}</p>
+                    <p><strong>Date:</strong> ${b.booking_date
+          ? new Date(b.booking_date).toLocaleDateString('en-IN')
+          : b.created_at
+            ? new Date(b.created_at).toLocaleDateString('en-IN')
+            : "N/A"
+        }</p>
                     <p><strong>Service ID:</strong> ${b.id}</p>
                     <p><strong>Patient Name:</strong> <span style="font-size:18px; font-weight:900; color:#000000; text-transform:uppercase;">${b.patient_name || "N/A"}</span></p>
                     <p style="margin:0; font-size:14px; color:#333333;"><strong>Contact Number:</strong> ${b.patient_contact || b.booker_phone || "N/A"}</p>
                     <p><strong>Village:</strong> ${b.patient_village || "N/A"}</p>
                     <p><strong>Police Station:</strong> ${b.patient_police_station || "N/A"}</p>
-                    <p><strong>District:</strong> ${ b.patient_district || "N/A"}</p>
+                    <p><strong>District:</strong> ${b.patient_district || "N/A"}</p>
                     <p><strong>Pincode:</strong> ${b.patient_pincode || "N/A"}</p>
                     <p><strong>Drop Location:</strong> ${b.drop_address || "N/A"}</p>
                     <p><strong>Driver Name:</strong> <span style="font-size:18px; font-weight:900; color:#000000; text-transform:uppercase;">${b.driver?.name || "N/A"}</span></p>
@@ -600,7 +609,10 @@ export default function ReportPage() {
                               <Badge variant="outline" className={getStatusColor(b.status)}>{b.status}</Badge>
                             </TableCell>
                             <TableCell className="whitespace-nowrap text-xs text-slate-600">
-                              {formatDate(b.created_at)}
+                              {b.booking_date
+                                ? new Date(b.booking_date).toLocaleDateString('en-IN')
+                                : formatDate(b.created_at)
+                              }
                             </TableCell>
                             <TableCell>
                               <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => openEditDialog(b)}>
@@ -646,7 +658,7 @@ export default function ReportPage() {
                     <TableBody>
                       {filteredBookings.length > 0 ? (
                         filteredBookings.map((b) => (
-                          
+
                           <TableRow key={b.id} className="hover:bg-slate-50/50">
                             <TableCell> {b.id}</TableCell>
                             <TableCell className="whitespace-nowrap">{b.booking_date || "N/A"}</TableCell>
@@ -768,7 +780,10 @@ export default function ReportPage() {
                               <Badge variant="outline" className={getStatusColor(b.status)}>{b.status}</Badge>
                             </TableCell>
                             <TableCell className="whitespace-nowrap text-xs text-slate-600">
-                              {formatDate(b.created_at)}
+                              {b.booking_date
+                                ? new Date(b.booking_date).toLocaleDateString('en-IN')
+                                : formatDate(b.created_at)
+                              }
                             </TableCell>
                             {/* ✅ ADDED EDIT BUTTON */}
                             <TableCell>
@@ -826,13 +841,13 @@ export default function ReportPage() {
           <DialogHeader>
             <DialogTitle>Edit Booking #{editingBooking?.id}</DialogTitle>
           </DialogHeader>
-          
+
           {editingBooking && (
             <div className="space-y-4 pt-4">
-              
+
               {/* ✅ NEW: Booking Person & Date/Time */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
-                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><ClipboardList className="h-4 w-4"/> Booking Details</h3>
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Booking Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium text-slate-600">Booker Name</label>
@@ -855,7 +870,7 @@ export default function ReportPage() {
 
               {/* Patient Info */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
-                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserRound className="h-4 w-4"/> Patient Details</h3>
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserRound className="h-4 w-4" /> Patient Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium text-slate-600">Patient Name</label>
@@ -882,7 +897,7 @@ export default function ReportPage() {
 
               {/* Location Info */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
-                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><HeartPulse className="h-4 w-4"/> Location & Medical</h3>
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><HeartPulse className="h-4 w-4" /> Location & Medical</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="col-span-1 sm:col-span-2">
                     <label className="text-xs font-medium text-slate-600">Pickup Address</label>
@@ -917,7 +932,7 @@ export default function ReportPage() {
 
               {/* ✅ NEW: Caretaker Details */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
-                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserRound className="h-4 w-4"/> Caretaker Details</h3>
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserRound className="h-4 w-4" /> Caretaker Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium text-slate-600">Caretaker Name</label>
@@ -936,13 +951,13 @@ export default function ReportPage() {
 
               {/* Drop Photo Update Section */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
-                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Camera className="h-4 w-4"/> Drop Photo</h3>
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Camera className="h-4 w-4" /> Drop Photo</h3>
                 <div className="flex items-center gap-4">
                   {editingBooking.drop_proof_url ? (
-                    <img 
-                      src={getImageUrl(editingBooking.drop_proof_url)} 
-                      alt="Current Drop" 
-                      className="h-20 w-20 rounded-md object-cover border border-slate-200 shadow-sm" 
+                    <img
+                      src={getImageUrl(editingBooking.drop_proof_url)}
+                      alt="Current Drop"
+                      className="h-20 w-20 rounded-md object-cover border border-slate-200 shadow-sm"
                     />
                   ) : (
                     <div className="h-20 w-20 rounded-md bg-slate-200 flex items-center justify-center text-slate-500">
@@ -951,10 +966,10 @@ export default function ReportPage() {
                   )}
                   <div className="flex-1">
                     <label className="text-xs font-medium text-slate-600">Upload New Photo (Optional)</label>
-                    <Input 
-                      type="file" 
+                    <Input
+                      type="file"
                       accept="image/*"
-                      onChange={(e) => setEditDropFile(e.target.files[0] || null)} 
+                      onChange={(e) => setEditDropFile(e.target.files[0] || null)}
                       className="mt-1"
                     />
                     {editDropFile && (
