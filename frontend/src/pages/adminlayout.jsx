@@ -5,6 +5,8 @@ import { Toaster } from "sonner"
 import { Header } from "../components/header"
 import { Footer } from "../components/footer"
 import AdminDashboard from "../components/admin"
+import { BookingForm } from "../components/booking-form"
+import DriverDashboard from "../components/driver"
 
 export default function AdminPage() {
   const [refresh, setRefresh] = useState(false)
@@ -18,9 +20,16 @@ export default function AdminPage() {
       <Header />
 
       {/* MAIN */}
+
+
+
       <main className="container mx-auto flex-1 px-4 py-10">
         <AdminDashboard refresh={refresh} onAction={reload} />
+        
+       
       </main>
+
+    
 
       {/* FOOTER */}
       <Footer />

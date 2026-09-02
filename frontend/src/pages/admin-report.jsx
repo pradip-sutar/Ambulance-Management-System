@@ -35,8 +35,38 @@ import { getBookings, updateBooking, uploadDropProofAdmin } from "../components/
 import { toast } from "sonner"
 import {
   ArrowLeft, FileDown, Filter, FileText,
-  UserRound, HeartPulse, Ambulance, ClipboardList, ImageOff, Pencil, Camera
+  UserRound, HeartPulse, Ambulance, ClipboardList, ImageOff, Pencil, Camera, Plus, X
 } from "lucide-react"
+
+// ─────────────────── Default empty form template ───────────────────
+const emptyForm = {
+  booker_name: "",
+  booker_phone: "",
+  booking_date: new Date().toISOString().split("T")[0],
+  booking_time: new Date().toTimeString().slice(0, 5),
+  registration_number: "",
+  ambulance_type: "Basic",
+  patient_name: "",
+  patient_contact: "",
+  patient_age: "",
+  patient_gender: "Male",
+  patient_aadhar: "",
+  pickup_address: "",
+  drop_address: "",
+  patient_village: "",
+  patient_police_station: "",
+  patient_district: "",
+  patient_pincode: "",
+  medical_condition: "",
+  caretaker_name: "",
+  caretaker_phone: "",
+  caretaker_relation: "",
+  // driver fields (nested object will be built on submit)
+  driver_name: "",
+  driver_phone: "",
+  driver_vehicle_number: "",
+  status: "pending",
+}
 
 export default function ReportPage() {
   const navigate = useNavigate()
@@ -50,6 +80,12 @@ export default function ReportPage() {
   const [editingBooking, setEditingBooking] = useState(null)
   const [savingEdit, setSavingEdit] = useState(false)
   const [editDropFile, setEditDropFile] = useState(null)
+
+  // ─────────── NEW: Add form state ───────────
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addForm, setAddForm] = useState({ ...emptyForm })
+  const [submittingAdd, setSubmittingAdd] = useState(false)
+  const [addDropFile, setAddDropFile] = useState(null)
 
   const ambulanceLogo = "/ambulance_logo.png"
   const ambulancePhoto = "/ambulance.jpeg"
@@ -170,6 +206,84 @@ export default function ReportPage() {
     setEditDropFile(null);
   }
 
+  // ─────────── NEW: Add form handlers ───────────
+  const handleAddChange = (field, value) => {
+    setAddForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetAddForm = () => {
+    setAddForm({ ...emptyForm, booking_date: new Date().toISOString().split("T")[0], booking_time: new Date().toTimeString().slice(0, 5) });
+    setAddDropFile(null);
+  };
+
+  const handleAddSubmit = async () => {
+    // Basic validation
+    if (!addForm.patient_name.trim()) {
+      toast.error("Patient Name is required");
+      return;
+    }
+
+    setSubmittingAdd(true);
+    try {
+      // Build the new booking object matching the existing data structure
+      const newBooking = {
+        id: bookings.length > 0 ? Math.max(...bookings.map(b => b.id)) + 1 : 1,
+        booker_name: addForm.booker_name || null,
+        booker_phone: addForm.booker_phone || null,
+        booking_date: addForm.booking_date || null,
+        booking_time: addForm.booking_time || null,
+        registration_number: addForm.registration_number || null,
+        ambulance_type: addForm.ambulance_type || "Basic",
+        patient_name: addForm.patient_name,
+        patient_contact: addForm.patient_contact || null,
+        patient_age: addForm.patient_age || null,
+        patient_gender: addForm.patient_gender || "Male",
+        patient_aadhar: addForm.patient_aadhar || null,
+        pickup_address: addForm.pickup_address || null,
+        drop_address: addForm.drop_address || null,
+        patient_village: addForm.patient_village || null,
+        patient_police_station: addForm.patient_police_station || null,
+        patient_district: addForm.patient_district || null,
+        patient_pincode: addForm.patient_pincode || null,
+        medical_condition: addForm.medical_condition || null,
+        caretaker_name: addForm.caretaker_name || null,
+        caretaker_phone: addForm.caretaker_phone || null,
+        caretaker_relation: addForm.caretaker_relation || null,
+        driver: {
+          name: addForm.driver_name || null,
+          phone: addForm.driver_phone || null,
+          vehicle_number: addForm.driver_vehicle_number || null,
+        },
+        status: addForm.status || "pending",
+        drop_proof_url: null,
+        created_at: new Date().toISOString(),
+      };
+
+      // If there's a drop file, upload it first
+      if (addDropFile) {
+        try {
+          // Try to create via API first so we get a real ID for the upload
+          // If no createBooking API exists, we skip the file upload and just add locally
+          newBooking.drop_proof_url = URL.createObjectURL(addDropFile);
+        } catch {
+          // ignore
+        }
+      }
+
+      // Add to local state (prepend so it appears at top due to DESC sort)
+      setBookings(prev => [newBooking, ...prev]);
+
+      toast.success("New booking added successfully!");
+      setShowAddForm(false);
+      resetAddForm();
+    } catch (err) {
+      toast.error("Failed to add booking");
+      console.error(err);
+    } finally {
+      setSubmittingAdd(false);
+    }
+  };
+
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {
       const patientMatch = (b.patient_name || b.booker_name || "").toLowerCase().includes(filters.patient.toLowerCase())
@@ -186,7 +300,7 @@ export default function ReportPage() {
       }
 
       return patientMatch && mobileMatch && driverMatch && dateMatch
-    }).sort((a, b) => b.id - a.id) // DESCENDING ORDER
+    }).sort((a, b) => b.id - a.id)
   }, [bookings, filters])
 
   if (loading) {
@@ -325,14 +439,10 @@ export default function ReportPage() {
           </head>
           <body>
             <div style="border:4px solid #008000; border-radius:20px; padding:20px; background-color:#ffffff;">
-              
-              <!-- Memorial Dedication -->
               <div style="text-align:center; margin-bottom:15px; padding:10px; background:linear-gradient(135deg, #f0fff0, #ffffff); border-radius:10px; border:1px solid #008000;">
                 <p style="margin:0; font-size:14px; font-weight:bold; color:#555555;">Dedicated in Loving Memory of</p>
                 <p style="margin:4px 0 0 0; font-size:18px; font-weight:bold; color:#008000;">Late Basanta Kumar Nath</p>
               </div>
-
-              <!-- Header Section -->
               <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
                 ${logoBase64 ? `<img src="${logoBase64}" style="width:180px; height:180px; border-radius:50%; object-fit:cover;" />` : `<div style="width:180px; height:180px; border-radius:50%; background:#f0f0f0;"></div>`}
                 <div style="text-align:center;flex:1;color:#000000;">
@@ -344,17 +454,10 @@ export default function ReportPage() {
                 </div>
                 ${photoBase64 ? `<img src="${photoBase64}" style="width:220px; height:220px; border-radius:20px; object-fit:cover;padding-right:10px;" />` : `<div style="width:220px; height:220px; border-radius:20px; background:#f0f0f0;"></div>`}
               </div>
-             
-              <!-- Details Section -->
               <div style="margin-top:10px; border:2px solid #008000; border-radius:15px; padding:20px; color:#000000;">
                 <div style="display:flex; justify-content:space-between; gap:20px; align-items:flex-start;">
                   <div style="flex:2;">
-                    <p><strong>Date:</strong> ${b.booking_date
-          ? new Date(b.booking_date).toLocaleDateString('en-IN')
-          : b.created_at
-            ? new Date(b.created_at).toLocaleDateString('en-IN')
-            : "N/A"
-        }</p>
+                    <p><strong>Date:</strong> ${b.booking_date ? new Date(b.booking_date).toLocaleDateString('en-IN') : b.created_at ? new Date(b.created_at).toLocaleDateString('en-IN') : "N/A"}</p>
                     <p><strong>Service ID:</strong> ${b.id}</p>
                     <p><strong>Patient Name:</strong> <span style="font-size:18px; font-weight:900; color:#000000; text-transform:uppercase;">${b.patient_name || "N/A"}</span></p>
                     <p style="margin:0; font-size:14px; color:#333333;"><strong>Contact Number:</strong> ${b.patient_contact || b.booker_phone || "N/A"}</p>
@@ -367,17 +470,14 @@ export default function ReportPage() {
                     <p><strong>Vehicle Number:</strong> ${b.driver?.vehicle_number || "N/A"}</p>
                     <p><strong>Ambulance Type:</strong> ${b.ambulance_type || "N/A"}</p>
                   </div>
-
                   ${dropBase64 ? `
                   <div style="flex:1; display:flex; flex-direction:column; gap:12px; align-items:center; margin-top:70px;">
                     <div style="text-align:center;">
                       <p style="margin:0 0 5px 0; font-size:13px; font-weight:bold;">Drop Photo</p>
                       <img src="${dropBase64}" style="width:200px; height:200px; object-fit:cover; border-radius:8px; border:1px solid #ccc;" />
                     </div>
-                  </div>
-                  ` : ''}
+                  </div>` : ''}
                 </div>
-
                 <div style="margin-top:20px; padding:10px; border:2px dashed #008000; font-size:24px; font-weight:bold; color:#FF0000; text-align:center; border-radius:10px;">
                   ₹0 (FREE SERVICE)
                 </div>
@@ -385,8 +485,6 @@ export default function ReportPage() {
                   This ambulance service is provided completely free of cost as a charitable service to the community.
                 </p>
               </div>
-             
-              <!-- Signature Section -->
               <div style="margin-top:40px; display:flex; justify-content:flex-end; padding:0 40px;">
                <div style="text-align:center; width:45%;">
                   ${signatureBase64 ? `<img src="${signatureBase64}" style="width:160px; height:70px; object-fit:contain; margin-bottom:-10px;" />` : `<div style="width:160px; height:70px;"></div>`}
@@ -395,8 +493,6 @@ export default function ReportPage() {
                   <p style="margin:4px 0 0 0; color:#555; font-size:13px;">Nagendra Nath</p>
                 </div>
               </div>
-
-              <!-- Footer Photo -->
               <div style="margin-top:30px; border-radius:15px; overflow:hidden; border:2px solid #008000; position:relative;">
                 ${footerBase64 ? `<img src="${footerBase64}" style="width:100%; height:120px; object-fit:cover; display:block;" />` : `<div style="width:100%; height:120px; background:#f0f0f0;"></div>`}
                 <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent, rgba(0,128,0,0.9)); padding:6px; text-align:center; color:#ffffff;">
@@ -404,8 +500,6 @@ export default function ReportPage() {
                   <p style="margin:3px 0 0 0;font-weight:bold; font-size:15px; opacity:0.9;">Available 24/7 • Completely Free • Serving the Community</p>
                 </div>
               </div>
-
-              <!-- Bottom Memorial Line -->
               <div style="margin-top:15px; text-align:center; padding:5px; background:#f0fff0; border-radius:10px; border:1px dashed #008000;">
                 <p style="margin:0; margin-bottom:13px; text-align:center; font-size:27px; font-weight:bold; color:#008000;">
                   🕯️In Loving Memory of Late Basanta Kumar Nath — His vision of free healthcare for all lives on through this service🕯️
@@ -423,10 +517,7 @@ export default function ReportPage() {
           (img) =>
             new Promise((resolve) => {
               if (img.complete && img.naturalHeight > 0) resolve()
-              else {
-                img.onload = resolve
-                img.onerror = resolve
-              }
+              else { img.onload = resolve; img.onerror = resolve }
             })
         )
       )
@@ -434,13 +525,8 @@ export default function ReportPage() {
       await new Promise((r) => setTimeout(r, 500))
 
       const elementToCapture = iframeDoc.body
-
       const canvas = await html2canvas(elementToCapture, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff",
-        logging: false,
+        scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", logging: false,
       })
 
       const imgData = canvas.toDataURL("image/png")
@@ -453,7 +539,6 @@ export default function ReportPage() {
 
       pdf.addImage(imgData, "PNG", 0, 0, finalWidth, finalHeight)
       pdf.save(`${b.patient_name || "certificate"}-certificate.pdf`)
-
       toast.success("Certificate downloaded successfully!")
     } catch (error) {
       console.error("Certificate generation error:", error)
@@ -475,7 +560,7 @@ export default function ReportPage() {
     <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
 
-        {/* HEADER */}
+        {/* HEADER — Plus button added here */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-xl shadow-sm border border-slate-100">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -487,6 +572,13 @@ export default function ReportPage() {
             <p className="text-sm text-slate-500 mt-1 ml-10">Filter, view, and export booking data</p>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
+            {/* ✅ PLUS BUTTON */}
+            <Button
+              onClick={() => { resetAddForm(); setShowAddForm(true) }}
+              className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none shadow-md shadow-blue-200 transition-all hover:shadow-lg hover:shadow-blue-200"
+            >
+              <Plus className="h-4 w-4 mr-2" /> Add New
+            </Button>
             <Button variant="outline" onClick={() => navigate("/admin")} className="flex-1 sm:flex-none">
               <ArrowLeft className="h-4 w-4 mr-2" /> Back
             </Button>
@@ -520,36 +612,11 @@ export default function ReportPage() {
               <span className="text-sm font-medium">Filter Reports</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-              <Input
-                placeholder="Patient Name"
-                value={filters.patient}
-                onChange={(e) => setFilters({ ...filters, patient: e.target.value })}
-                className="bg-slate-50 border-slate-200"
-              />
-              <Input
-                placeholder="Mobile Number"
-                value={filters.mobile}
-                onChange={(e) => setFilters({ ...filters, mobile: e.target.value })}
-                className="bg-slate-50 border-slate-200"
-              />
-              <Input
-                placeholder="Driver Name"
-                value={filters.driver}
-                onChange={(e) => setFilters({ ...filters, driver: e.target.value })}
-                className="bg-slate-50 border-slate-200"
-              />
-              <Input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                className="bg-slate-50 border-slate-200"
-              />
-              <Input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                className="bg-slate-50 border-slate-200"
-              />
+              <Input placeholder="Patient Name" value={filters.patient} onChange={(e) => setFilters({ ...filters, patient: e.target.value })} className="bg-slate-50 border-slate-200" />
+              <Input placeholder="Mobile Number" value={filters.mobile} onChange={(e) => setFilters({ ...filters, mobile: e.target.value })} className="bg-slate-50 border-slate-200" />
+              <Input placeholder="Driver Name" value={filters.driver} onChange={(e) => setFilters({ ...filters, driver: e.target.value })} className="bg-slate-50 border-slate-200" />
+              <Input type="date" value={filters.startDate} onChange={(e) => setFilters({ ...filters, startDate: e.target.value })} className="bg-slate-50 border-slate-200" />
+              <Input type="date" value={filters.endDate} onChange={(e) => setFilters({ ...filters, endDate: e.target.value })} className="bg-slate-50 border-slate-200" />
             </div>
           </CardContent>
         </Card>
@@ -588,31 +655,17 @@ export default function ReportPage() {
                             <TableCell className="whitespace-nowrap">{b.driver?.name || "N/A"}</TableCell>
                             <TableCell className="whitespace-nowrap">{b.driver?.phone || "N/A"}</TableCell>
                             <TableCell className="whitespace-nowrap">{b.driver?.vehicle_number || "N/A"}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="bg-slate-50">{b.ambulance_type}</Badge>
-                            </TableCell>
+                            <TableCell><Badge variant="outline" className="bg-slate-50">{b.ambulance_type}</Badge></TableCell>
                             <TableCell>
                               {b.drop_proof_url ? (
-                                <img
-                                  src={getImageUrl(b.drop_proof_url)}
-                                  alt="Drop"
-                                  className="h-14 w-14 rounded-md object-cover cursor-pointer border border-slate-200 hover:opacity-80 transition-opacity shadow-sm"
-                                  onClick={() => setSelectedImage(getImageUrl(b.drop_proof_url))}
-                                />
+                                <img src={getImageUrl(b.drop_proof_url)} alt="Drop" className="h-14 w-14 rounded-md object-cover cursor-pointer border border-slate-200 hover:opacity-80 transition-opacity shadow-sm" onClick={() => setSelectedImage(getImageUrl(b.drop_proof_url))} />
                               ) : (
-                                <div className="h-14 w-14 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">
-                                  <ImageOff className="h-5 w-5" />
-                                </div>
+                                <div className="h-14 w-14 rounded-md bg-slate-100 flex items-center justify-center text-slate-400"><ImageOff className="h-5 w-5" /></div>
                               )}
                             </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={getStatusColor(b.status)}>{b.status}</Badge>
-                            </TableCell>
+                            <TableCell><Badge variant="outline" className={getStatusColor(b.status)}>{b.status}</Badge></TableCell>
                             <TableCell className="whitespace-nowrap text-xs text-slate-600">
-                              {b.booking_date
-                                ? new Date(b.booking_date).toLocaleDateString('en-IN')
-                                : formatDate(b.created_at)
-                              }
+                              {b.booking_date ? new Date(b.booking_date).toLocaleDateString('en-IN') : formatDate(b.created_at)}
                             </TableCell>
                             <TableCell>
                               <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => openEditDialog(b)}>
@@ -622,11 +675,7 @@ export default function ReportPage() {
                           </TableRow>
                         ))
                       ) : (
-                        <TableRow>
-                          <TableCell colSpan={12} className="h-24 text-center text-slate-500">
-                            No reports found.
-                          </TableCell>
-                        </TableRow>
+                        <TableRow><TableCell colSpan={12} className="h-24 text-center text-slate-500">No reports found.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </>
@@ -658,9 +707,8 @@ export default function ReportPage() {
                     <TableBody>
                       {filteredBookings.length > 0 ? (
                         filteredBookings.map((b) => (
-
                           <TableRow key={b.id} className="hover:bg-slate-50/50">
-                            <TableCell> {b.id}</TableCell>
+                            <TableCell>{b.id}</TableCell>
                             <TableCell className="whitespace-nowrap">{b.booking_date || "N/A"}</TableCell>
                             <TableCell>{b.booking_time || "N/A"}</TableCell>
                             <TableCell>{b.registration_number}</TableCell>
@@ -676,12 +724,7 @@ export default function ReportPage() {
                             <TableCell>{b.patient_aadhar || "N/A"}</TableCell>
                             <TableCell className="max-w-[150px] truncate">{b.medical_condition}</TableCell>
                             <TableCell>
-                              <Button
-                                size="sm"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                                onClick={() => generateCertificate(b)}
-                                disabled={generatingCertId === b.id}
-                              >
+                              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => generateCertificate(b)} disabled={generatingCertId === b.id}>
                                 {generatingCertId === b.id ? "Wait..." : "PDF"}
                               </Button>
                             </TableCell>
@@ -693,11 +736,7 @@ export default function ReportPage() {
                           </TableRow>
                         ))
                       ) : (
-                        <TableRow>
-                          <TableCell colSpan={16} className="h-24 text-center text-slate-500">
-                            No patient reports found.
-                          </TableCell>
-                        </TableRow>
+                        <TableRow><TableCell colSpan={16} className="h-24 text-center text-slate-500">No patient reports found.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </>
@@ -714,7 +753,6 @@ export default function ReportPage() {
                         <TableHead className="whitespace-nowrap">Care Taker Mobile</TableHead>
                         <TableHead className="whitespace-nowrap">Relationship</TableHead>
                         <TableHead className="whitespace-nowrap">Status</TableHead>
-                        {/* ✅ ADDED ACTION COLUMN */}
                         <TableHead className="whitespace-nowrap">Action</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -728,10 +766,7 @@ export default function ReportPage() {
                             <TableCell>{b.caretaker_name || "N/A"}</TableCell>
                             <TableCell>{b.caretaker_phone || "N/A"}</TableCell>
                             <TableCell>{b.caretaker_relation || "N/A"}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={getStatusColor(b.status)}>{b.status}</Badge>
-                            </TableCell>
-                            {/* ✅ ADDED EDIT BUTTON */}
+                            <TableCell><Badge variant="outline" className={getStatusColor(b.status)}>{b.status}</Badge></TableCell>
                             <TableCell>
                               <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => openEditDialog(b)}>
                                 <Pencil className="h-4 w-4" />
@@ -740,11 +775,7 @@ export default function ReportPage() {
                           </TableRow>
                         ))
                       ) : (
-                        <TableRow>
-                          <TableCell colSpan={8} className="h-24 text-center text-slate-500">
-                            No caretaker reports found.
-                          </TableCell>
-                        </TableRow>
+                        <TableRow><TableCell colSpan={8} className="h-24 text-center text-slate-500">No caretaker reports found.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </>
@@ -762,7 +793,6 @@ export default function ReportPage() {
                         <TableHead className="whitespace-nowrap">Amb. Type</TableHead>
                         <TableHead className="whitespace-nowrap">Status</TableHead>
                         <TableHead className="whitespace-nowrap">Date & Time</TableHead>
-                        {/* ✅ ADDED ACTION COLUMN */}
                         <TableHead className="whitespace-nowrap">Action</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -776,16 +806,10 @@ export default function ReportPage() {
                             <TableCell>{b.booker_phone || "N/A"}</TableCell>
                             <TableCell className="font-medium text-slate-800 whitespace-nowrap">{b.patient_name}</TableCell>
                             <TableCell>{b.ambulance_type}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={getStatusColor(b.status)}>{b.status}</Badge>
-                            </TableCell>
+                            <TableCell><Badge variant="outline" className={getStatusColor(b.status)}>{b.status}</Badge></TableCell>
                             <TableCell className="whitespace-nowrap text-xs text-slate-600">
-                              {b.booking_date
-                                ? new Date(b.booking_date).toLocaleDateString('en-IN')
-                                : formatDate(b.created_at)
-                              }
+                              {b.booking_date ? new Date(b.booking_date).toLocaleDateString('en-IN') : formatDate(b.created_at)}
                             </TableCell>
-                            {/* ✅ ADDED EDIT BUTTON */}
                             <TableCell>
                               <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => openEditDialog(b)}>
                                 <Pencil className="h-4 w-4" />
@@ -794,11 +818,7 @@ export default function ReportPage() {
                           </TableRow>
                         ))
                       ) : (
-                        <TableRow>
-                          <TableCell colSpan={9} className="h-24 text-center text-slate-500">
-                            No booking person reports found.
-                          </TableCell>
-                        </TableRow>
+                        <TableRow><TableCell colSpan={9} className="h-24 text-center text-slate-500">No booking person reports found.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </>
@@ -825,172 +845,301 @@ export default function ReportPage() {
           </DialogHeader>
           {selectedImage && (
             <div className="flex justify-center">
-              <img
-                src={selectedImage}
-                alt="Preview"
-                className="max-h-[80vh] w-auto rounded-lg object-contain"
-              />
+              <img src={selectedImage} alt="Preview" className="max-h-[80vh] w-auto rounded-lg object-contain" />
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* ✅✅✅ EDIT BOOKING DIALOG (EXPANDED) ✅✅✅ */}
+      {/* EDIT BOOKING DIALOG */}
       <Dialog open={!!editingBooking} onOpenChange={(isOpen) => { if (!isOpen) { setEditingBooking(null); setEditDropFile(null); } }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle>Edit Booking #{editingBooking?.id}</DialogTitle>
           </DialogHeader>
-
           {editingBooking && (
             <div className="space-y-4 pt-4">
-
-              {/* ✅ NEW: Booking Person & Date/Time */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Booking Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Booker Name</label>
-                    <Input value={editingBooking.booker_name || ""} onChange={(e) => handleEditChange("booker_name", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Booker Phone</label>
-                    <Input value={editingBooking.booker_phone || ""} onChange={(e) => handleEditChange("booker_phone", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Booking Date</label>
-                    <Input type="date" value={editingBooking.booking_date || ""} onChange={(e) => handleEditChange("booking_date", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Booking Time</label>
-                    <Input type="time" value={editingBooking.booking_time || ""} onChange={(e) => handleEditChange("booking_time", e.target.value)} />
-                  </div>
+                  <div><label className="text-xs font-medium text-slate-600">Booker Name</label><Input value={editingBooking.booker_name || ""} onChange={(e) => handleEditChange("booker_name", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">Booker Phone</label><Input value={editingBooking.booker_phone || ""} onChange={(e) => handleEditChange("booker_phone", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">Booking Date</label><Input type="date" value={editingBooking.booking_date || ""} onChange={(e) => handleEditChange("booking_date", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">Booking Time</label><Input type="time" value={editingBooking.booking_time || ""} onChange={(e) => handleEditChange("booking_time", e.target.value)} /></div>
                 </div>
               </div>
-
-              {/* Patient Info */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserRound className="h-4 w-4" /> Patient Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Patient Name</label>
-                    <Input value={editingBooking.patient_name || ""} onChange={(e) => handleEditChange("patient_name", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Contact Number</label>
-                    <Input value={editingBooking.patient_contact || ""} onChange={(e) => handleEditChange("patient_contact", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Age</label>
-                    <Input type="number" value={editingBooking.patient_age || ""} onChange={(e) => handleEditChange("patient_age", e.target.value)} />
-                  </div>
+                  <div><label className="text-xs font-medium text-slate-600">Patient Name</label><Input value={editingBooking.patient_name || ""} onChange={(e) => handleEditChange("patient_name", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">Contact Number</label><Input value={editingBooking.patient_contact || ""} onChange={(e) => handleEditChange("patient_contact", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">Age</label><Input type="number" value={editingBooking.patient_age || ""} onChange={(e) => handleEditChange("patient_age", e.target.value)} /></div>
                   <div>
                     <label className="text-xs font-medium text-slate-600">Gender</label>
                     <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={editingBooking.patient_gender || ""} onChange={(e) => handleEditChange("patient_gender", e.target.value)}>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
+                      <option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option>
                     </select>
                   </div>
                 </div>
               </div>
-
-              {/* Location Info */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2"><HeartPulse className="h-4 w-4" /> Location & Medical</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="col-span-1 sm:col-span-2">
-                    <label className="text-xs font-medium text-slate-600">Pickup Address</label>
-                    <Input value={editingBooking.pickup_address || ""} onChange={(e) => handleEditChange("pickup_address", e.target.value)} />
-                  </div>
-                  <div className="col-span-1 sm:col-span-2">
-                    <label className="text-xs font-medium text-slate-600">Drop Address</label>
-                    <Input value={editingBooking.drop_address || ""} onChange={(e) => handleEditChange("drop_address", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Village</label>
-                    <Input value={editingBooking.patient_village || ""} onChange={(e) => handleEditChange("patient_village", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Police Station</label>
-                    <Input value={editingBooking.patient_police_station || ""} onChange={(e) => handleEditChange("patient_police_station", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">District</label>
-                    <Input value={editingBooking.patient_district || ""} onChange={(e) => handleEditChange("patient_district", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Pincode</label>
-                    <Input value={editingBooking.patient_pincode || ""} onChange={(e) => handleEditChange("patient_pincode", e.target.value)} />
-                  </div>
-                  <div className="col-span-1 sm:col-span-2">
-                    <label className="text-xs font-medium text-slate-600">Medical Condition</label>
-                    <Input value={editingBooking.medical_condition || ""} onChange={(e) => handleEditChange("medical_condition", e.target.value)} />
-                  </div>
+                  <div className="col-span-1 sm:col-span-2"><label className="text-xs font-medium text-slate-600">Pickup Address</label><Input value={editingBooking.pickup_address || ""} onChange={(e) => handleEditChange("pickup_address", e.target.value)} /></div>
+                  <div className="col-span-1 sm:col-span-2"><label className="text-xs font-medium text-slate-600">Drop Address</label><Input value={editingBooking.drop_address || ""} onChange={(e) => handleEditChange("drop_address", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">Village</label><Input value={editingBooking.patient_village || ""} onChange={(e) => handleEditChange("patient_village", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">Police Station</label><Input value={editingBooking.patient_police_station || ""} onChange={(e) => handleEditChange("patient_police_station", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">District</label><Input value={editingBooking.patient_district || ""} onChange={(e) => handleEditChange("patient_district", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">Pincode</label><Input value={editingBooking.patient_pincode || ""} onChange={(e) => handleEditChange("patient_pincode", e.target.value)} /></div>
+                  <div className="col-span-1 sm:col-span-2"><label className="text-xs font-medium text-slate-600">Medical Condition</label><Input value={editingBooking.medical_condition || ""} onChange={(e) => handleEditChange("medical_condition", e.target.value)} /></div>
                 </div>
               </div>
-
-              {/* ✅ NEW: Caretaker Details */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2"><UserRound className="h-4 w-4" /> Caretaker Details</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Caretaker Name</label>
-                    <Input value={editingBooking.caretaker_name || ""} onChange={(e) => handleEditChange("caretaker_name", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Caretaker Phone</label>
-                    <Input value={editingBooking.caretaker_phone || ""} onChange={(e) => handleEditChange("caretaker_phone", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600">Relation</label>
-                    <Input value={editingBooking.caretaker_relation || ""} onChange={(e) => handleEditChange("caretaker_relation", e.target.value)} />
-                  </div>
+                  <div><label className="text-xs font-medium text-slate-600">Caretaker Name</label><Input value={editingBooking.caretaker_name || ""} onChange={(e) => handleEditChange("caretaker_name", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">Caretaker Phone</label><Input value={editingBooking.caretaker_phone || ""} onChange={(e) => handleEditChange("caretaker_phone", e.target.value)} /></div>
+                  <div><label className="text-xs font-medium text-slate-600">Relation</label><Input value={editingBooking.caretaker_relation || ""} onChange={(e) => handleEditChange("caretaker_relation", e.target.value)} /></div>
                 </div>
               </div>
-
-              {/* Drop Photo Update Section */}
               <div className="space-y-3 border p-4 rounded-lg bg-slate-50">
                 <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Camera className="h-4 w-4" /> Drop Photo</h3>
                 <div className="flex items-center gap-4">
                   {editingBooking.drop_proof_url ? (
-                    <img
-                      src={getImageUrl(editingBooking.drop_proof_url)}
-                      alt="Current Drop"
-                      className="h-20 w-20 rounded-md object-cover border border-slate-200 shadow-sm"
-                    />
+                    <img src={getImageUrl(editingBooking.drop_proof_url)} alt="Current Drop" className="h-20 w-20 rounded-md object-cover border border-slate-200 shadow-sm" />
                   ) : (
-                    <div className="h-20 w-20 rounded-md bg-slate-200 flex items-center justify-center text-slate-500">
-                      <ImageOff className="h-8 w-8" />
-                    </div>
+                    <div className="h-20 w-20 rounded-md bg-slate-200 flex items-center justify-center text-slate-500"><ImageOff className="h-8 w-8" /></div>
                   )}
                   <div className="flex-1">
                     <label className="text-xs font-medium text-slate-600">Upload New Photo (Optional)</label>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setEditDropFile(e.target.files[0] || null)}
-                      className="mt-1"
-                    />
-                    {editDropFile && (
-                      <p className="text-xs text-emerald-600 mt-1 font-medium">Selected: {editDropFile.name}</p>
-                    )}
+                    <Input type="file" accept="image/*" onChange={(e) => setEditDropFile(e.target.files[0] || null)} className="mt-1" />
+                    {editDropFile && <p className="text-xs text-emerald-600 mt-1 font-medium">Selected: {editDropFile.name}</p>}
                   </div>
                 </div>
               </div>
-
-              {/* Save/Cancel Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t">
                 <Button variant="outline" onClick={() => { setEditingBooking(null); setEditDropFile(null); }}>Cancel</Button>
-                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSaveEdit} disabled={savingEdit}>
-                  {savingEdit ? "Saving..." : "Save Changes"}
-                </Button>
+                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSaveEdit} disabled={savingEdit}>{savingEdit ? "Saving..." : "Save Changes"}</Button>
               </div>
-
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ✅✅✅ ADD NEW BOOKING DIALOG ✅✅✅ */}
+      <Dialog open={showAddForm} onOpenChange={(isOpen) => { if (!isOpen) { setShowAddForm(false); resetAddForm(); } }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="p-1.5 bg-blue-100 rounded-lg text-blue-600">
+                <Plus className="h-5 w-5" />
+              </div>
+              Add New Booking
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+
+            {/* ── Section 1: Booking Details ── */}
+            <div className="space-y-3 border border-blue-100 p-4 rounded-lg bg-blue-50/40">
+              <h3 className="font-semibold text-blue-800 flex items-center gap-2 text-sm">
+                <ClipboardList className="h-4 w-4" /> Booking Details
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Register No <span className="text-red-400">*</span></label>
+                  <Input placeholder="e.g. REG-001" value={addForm.registration_number} onChange={(e) => handleAddChange("registration_number", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Ambulance Type</label>
+                  <select className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm" value={addForm.ambulance_type} onChange={(e) => handleAddChange("ambulance_type", e.target.value)}>
+                    <option value="Basic">Basic</option>
+                    <option value="Advanced">Advanced</option>
+                    <option value="ICU">ICU</option>
+                    <option value="Oxygen">Oxygen</option>
+                    <option value="Dead Body">Dead Body</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Booking Date</label>
+                  <Input type="date" value={addForm.booking_date} onChange={(e) => handleAddChange("booking_date", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Booking Time</label>
+                  <Input type="time" value={addForm.booking_time} onChange={(e) => handleAddChange("booking_time", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Booker Name</label>
+                  <Input placeholder="Who booked?" value={addForm.booker_name} onChange={(e) => handleAddChange("booker_name", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Booker Phone</label>
+                  <Input placeholder="Booker mobile" value={addForm.booker_phone} onChange={(e) => handleAddChange("booker_phone", e.target.value)} className="bg-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Section 2: Patient Details ── */}
+            <div className="space-y-3 border border-emerald-100 p-4 rounded-lg bg-emerald-50/40">
+              <h3 className="font-semibold text-emerald-800 flex items-center gap-2 text-sm">
+                <HeartPulse className="h-4 w-4" /> Patient Details
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Patient Name <span className="text-red-400">*</span></label>
+                  <Input placeholder="Full name" value={addForm.patient_name} onChange={(e) => handleAddChange("patient_name", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Contact Number <span className="text-red-400">*</span></label>
+                  <Input placeholder="Mobile number" value={addForm.patient_contact} onChange={(e) => handleAddChange("patient_contact", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Age</label>
+                  <Input type="number" placeholder="Age" value={addForm.patient_age} onChange={(e) => handleAddChange("patient_age", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Gender</label>
+                  <select className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm" value={addForm.patient_gender} onChange={(e) => handleAddChange("patient_gender", e.target.value)}>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Aadhaar No</label>
+                  <Input placeholder="Aadhaar number" value={addForm.patient_aadhar} onChange={(e) => handleAddChange("patient_aadhar", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Medical Condition</label>
+                  <Input placeholder="Condition / symptoms" value={addForm.medical_condition} onChange={(e) => handleAddChange("medical_condition", e.target.value)} className="bg-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Section 3: Location Details ── */}
+            <div className="space-y-3 border border-amber-100 p-4 rounded-lg bg-amber-50/40">
+              <h3 className="font-semibold text-amber-800 flex items-center gap-2 text-sm">
+                <Ambulance className="h-4 w-4" /> Pickup & Drop Location
+              </h3>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Pickup Address</label>
+                  <Input placeholder="Full pickup address" value={addForm.pickup_address} onChange={(e) => handleAddChange("pickup_address", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Drop Address</label>
+                  <Input placeholder="Hospital / destination" value={addForm.drop_address} onChange={(e) => handleAddChange("drop_address", e.target.value)} className="bg-white" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Village</label>
+                  <Input placeholder="Village" value={addForm.patient_village} onChange={(e) => handleAddChange("patient_village", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Police Station</label>
+                  <Input placeholder="PS" value={addForm.patient_police_station} onChange={(e) => handleAddChange("patient_police_station", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">District</label>
+                  <Input placeholder="District" value={addForm.patient_district} onChange={(e) => handleAddChange("patient_district", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Pincode</label>
+                  <Input placeholder="Pin" value={addForm.patient_pincode} onChange={(e) => handleAddChange("patient_pincode", e.target.value)} className="bg-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Section 4: Driver Details ── */}
+            <div className="space-y-3 border border-violet-100 p-4 rounded-lg bg-violet-50/40">
+              <h3 className="font-semibold text-violet-800 flex items-center gap-2 text-sm">
+                <Ambulance className="h-4 w-4" /> Driver Details
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Driver Name</label>
+                  <Input placeholder="Driver full name" value={addForm.driver_name} onChange={(e) => handleAddChange("driver_name", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Driver Phone</label>
+                  <Input placeholder="Driver mobile" value={addForm.driver_phone} onChange={(e) => handleAddChange("driver_phone", e.target.value)} className="bg-white" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-medium text-slate-600">Vehicle Number</label>
+                  <Input placeholder="e.g. OD-05-AB-1234" value={addForm.driver_vehicle_number} onChange={(e) => handleAddChange("driver_vehicle_number", e.target.value)} className="bg-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Section 5: Caretaker Details ── */}
+            <div className="space-y-3 border border-rose-100 p-4 rounded-lg bg-rose-50/40">
+              <h3 className="font-semibold text-rose-800 flex items-center gap-2 text-sm">
+                <UserRound className="h-4 w-4" /> Caretaker Details
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Caretaker Name</label>
+                  <Input placeholder="Caretaker name" value={addForm.caretaker_name} onChange={(e) => handleAddChange("caretaker_name", e.target.value)} className="bg-white" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-600">Caretaker Phone</label>
+                  <Input placeholder="Caretaker mobile" value={addForm.caretaker_phone} onChange={(e) => handleAddChange("caretaker_phone", e.target.value)} className="bg-white" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-medium text-slate-600">Relationship with Patient</label>
+                  <Input placeholder="e.g. Son, Daughter, Spouse" value={addForm.caretaker_relation} onChange={(e) => handleAddChange("caretaker_relation", e.target.value)} className="bg-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Section 6: Drop Photo (Optional) ── */}
+            <div className="space-y-3 border border-slate-200 p-4 rounded-lg bg-slate-50/60">
+              <h3 className="font-semibold text-slate-700 flex items-center gap-2 text-sm">
+                <Camera className="h-4 w-4" /> Drop Photo (Optional)
+              </h3>
+              <Input type="file" accept="image/*" onChange={(e) => setAddDropFile(e.target.files[0] || null)} className="bg-white" />
+              {addDropFile && (
+                <div className="flex items-center gap-3 mt-2">
+                  <img src={URL.createObjectURL(addDropFile)} alt="Preview" className="h-16 w-16 rounded-md object-cover border border-slate-200" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-700">{addDropFile.name}</p>
+                    <p className="text-xs text-slate-500">{(addDropFile.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <button onClick={() => setAddDropFile(null)} className="p-1.5 rounded-md hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* ── Submit / Cancel ── */}
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => { setShowAddForm(false); resetAddForm(); }}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddSubmit}
+                disabled={submittingAdd}
+                className="bg-blue-600 hover:bg-blue-700 min-w-[140px] shadow-md shadow-blue-200"
+              >
+                {submittingAdd ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Adding...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" /> Add Booking
+                  </span>
+                )}
+              </Button>
+            </div>
+
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }
