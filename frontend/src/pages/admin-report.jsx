@@ -30,7 +30,12 @@ import {
 
 import { Button } from "../components/ui/button"
 
-import { getBookings, updateBooking, uploadDropProofAdmin } from "../components/api/adminApi"
+import {
+  getBookings,
+  updateBooking,
+  uploadDropProofAdmin,
+  createAdminBooking,
+} from "../components/api/adminApi";
 
 import { toast } from "sonner"
 import {
@@ -65,7 +70,7 @@ const emptyForm = {
   driver_name: "",
   driver_phone: "",
   driver_vehicle_number: "",
-  status: "pending",
+  status: "completed",
 }
 
 export default function ReportPage() {
@@ -216,73 +221,69 @@ export default function ReportPage() {
     setAddDropFile(null);
   };
 
-  const handleAddSubmit = async () => {
-    // Basic validation
-    if (!addForm.patient_name.trim()) {
-      toast.error("Patient Name is required");
-      return;
-    }
+ const handleAddSubmit = async () => {
+  if (!addForm.patient_name.trim()) {
+    toast.error("Patient Name is required");
+    return;
+  }
 
-    setSubmittingAdd(true);
-    try {
-      // Build the new booking object matching the existing data structure
-      const newBooking = {
-        id: bookings.length > 0 ? Math.max(...bookings.map(b => b.id)) + 1 : 1,
-        booker_name: addForm.booker_name || null,
-        booker_phone: addForm.booker_phone || null,
-        booking_date: addForm.booking_date || null,
-        booking_time: addForm.booking_time || null,
-        registration_number: addForm.registration_number || null,
-        ambulance_type: addForm.ambulance_type || "Basic",
-        patient_name: addForm.patient_name,
-        patient_contact: addForm.patient_contact || null,
-        patient_age: addForm.patient_age || null,
-        patient_gender: addForm.patient_gender || "Male",
-        patient_aadhar: addForm.patient_aadhar || null,
-        pickup_address: addForm.pickup_address || null,
-        drop_address: addForm.drop_address || null,
-        patient_village: addForm.patient_village || null,
-        patient_police_station: addForm.patient_police_station || null,
-        patient_district: addForm.patient_district || null,
-        patient_pincode: addForm.patient_pincode || null,
-        medical_condition: addForm.medical_condition || null,
-        caretaker_name: addForm.caretaker_name || null,
-        caretaker_phone: addForm.caretaker_phone || null,
-        caretaker_relation: addForm.caretaker_relation || null,
-        driver: {
-          name: addForm.driver_name || null,
-          phone: addForm.driver_phone || null,
-          vehicle_number: addForm.driver_vehicle_number || null,
-        },
-        status: addForm.status || "pending",
-        drop_proof_url: null,
-        created_at: new Date().toISOString(),
-      };
+  setSubmittingAdd(true);
+  try {
+    // 1. Send full payload to backend
+    const payload = {
+      booker_name: addForm.booker_name || null,
+      booker_phone: addForm.booker_phone || null,
+      booking_date: addForm.booking_date || null,
+      booking_time: addForm.booking_time || null,
+      registration_number: addForm.registration_number || null,
+      ambulance_type: addForm.ambulance_type || "Basic",
+      patient_name: addForm.patient_name,
+      patient_contact: addForm.patient_contact || null,
+      patient_age: addForm.patient_age ? Number(addForm.patient_age) : null,
+      patient_gender: addForm.patient_gender || null,
+      patient_aadhar: addForm.patient_aadhar || null,
+      patient_village: addForm.patient_village || null,
+      patient_police_station: addForm.patient_police_station || null,
+      patient_district: addForm.patient_district || null,
+      patient_pincode: addForm.patient_pincode || null,
+      medical_condition: addForm.medical_condition || null,
+      pickup_address: addForm.pickup_address || null,
+      drop_address: addForm.drop_address || null,
+      caretaker_name: addForm.caretaker_name || null,
+      caretaker_phone: addForm.caretaker_phone || null,
+      caretaker_relation: addForm.caretaker_relation || null,
+      driver_name: addForm.driver_name || null,
+      driver_phone: addForm.driver_phone || null,
+      driver_vehicle_number: addForm.driver_vehicle_number || null,
+      status: addForm.status || "completed",
+    };
 
-      // If there's a drop file, upload it first
-      if (addDropFile) {
-        try {
-          // Try to create via API first so we get a real ID for the upload
-          // If no createBooking API exists, we skip the file upload and just add locally
-          newBooking.drop_proof_url = URL.createObjectURL(addDropFile);
-        } catch {
-          // ignore
-        }
+    const created = await createAdminBooking(payload);
+
+    // 2. Upload drop proof if provided (now we have a real DB id)
+    if (addDropFile && created.id) {
+      try {
+        await uploadDropProofAdmin(created.id, addDropFile);
+      } catch (e) {
+        console.error("Drop proof upload failed:", e);
+        toast.warning("Booking saved, but drop photo upload failed");
       }
-
-      // Add to local state (prepend so it appears at top due to DESC sort)
-      setBookings(prev => [newBooking, ...prev]);
-
-      toast.success("New booking added successfully!");
-      setShowAddForm(false);
-      resetAddForm();
-    } catch (err) {
-      toast.error("Failed to add booking");
-      console.error(err);
-    } finally {
-      setSubmittingAdd(false);
     }
-  };
+
+    toast.success("Booking added successfully!");
+
+    // 3. Re-fetch from server so table reflects DB truth
+    await fetchReports();
+
+    setShowAddForm(false);
+    resetAddForm();
+  } catch (err) {
+    console.error(err);
+    toast.error(err?.message || "Failed to add booking");
+  } finally {
+    setSubmittingAdd(false);
+  }
+};
 
   const filteredBookings = useMemo(() => {
     return bookings.filter((b) => {

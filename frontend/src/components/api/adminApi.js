@@ -102,8 +102,7 @@ export const uploadDropProofAdmin = async (bookingId, file) => {
     const formData = new FormData();
     formData.append("file", file);
 
-    // Use the existing driver endpoint for uploading drop proof
-    const res = await API.post(`/drivers/bookings/${bookingId}/drop-proof`, formData, {
+    const res = await API.post(`/bookings/${bookingId}/drop-proof`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -112,5 +111,18 @@ export const uploadDropProofAdmin = async (bookingId, file) => {
   } catch (error) {
     console.error("Upload Drop Proof Error:", error.response?.data || error.message);
     throw error.response?.data || { message: "Failed to upload drop proof" };
+  }
+};
+
+
+
+
+export const createAdminBooking = async (payload) => {
+  try {
+    const res = await API.post("/bookings/admin-create", payload);
+    return res.data;
+  } catch (error) {
+    console.error("Create Booking Error:", error.response?.data || error.message);
+    throw error.response?.data || { message: "Failed to create booking" };
   }
 };

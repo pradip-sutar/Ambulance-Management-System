@@ -161,3 +161,46 @@ class BookingResponse(BaseModel):
 
 
 
+
+# =========================================================
+# ADMIN FULL BOOKING CREATE — admin enters complete data at once
+# =========================================================
+class AdminBookingCreate(BaseModel):
+    # Booking person
+    booker_name: Optional[str] = None
+    booker_phone: Optional[str] = None
+
+    booking_date: Optional[str] = None
+    booking_time: Optional[str] = None
+
+    registration_number: Optional[str] = None   # optional — auto-generated if missing
+    ambulance_type: Optional[str] = "Basic"
+
+    # Patient
+    patient_name: str
+    patient_contact: Optional[str] = None
+    patient_age: Optional[int] = None
+    patient_gender: Optional[str] = None
+    patient_aadhar: Optional[str] = None
+    patient_village: Optional[str] = None
+    patient_police_station: Optional[str] = None
+    patient_district: Optional[str] = None
+    patient_pincode: Optional[str] = None
+    medical_condition: Optional[str] = None
+
+    pickup_address: Optional[str] = None
+    drop_address: Optional[str] = None
+
+    # Caretaker
+    caretaker_name: Optional[str] = None
+    caretaker_phone: Optional[str] = None
+    caretaker_relation: Optional[str] = None
+
+    # Driver (nested) — driver will be looked up or created
+    driver_name: Optional[str] = None
+    driver_phone: Optional[str] = None
+    driver_vehicle_number: Optional[str] = None
+
+    status: Optional[str] = "completed"
+
+
